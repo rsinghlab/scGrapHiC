@@ -3,10 +3,10 @@ import pandas as pd
 
 
 # Read in TSVs
-kb1 = pd.read_csv('data/1000base_resolution_final_with_names.tsv', sep='\t')
-kb10 = pd.read_csv('data/10000base_resolution_final_with_names.tsv', sep='\t')
-kb100 = pd.read_csv('data/100000base_resolution_final_with_names.tsv', sep='\t')
-mb1 = pd.read_csv('data/1000000base_resolution_final_with_names.tsv', sep='\t')
+kb1 = pd.read_csv('1000base_resolution_final_with_names.tsv', sep='\t')
+kb10 = pd.read_csv('10000base_resolution_final_with_names.tsv', sep='\t')
+kb100 = pd.read_csv('100000base_resolution_final_with_names.tsv', sep='\t')
+mb1 = pd.read_csv('1000000base_resolution_final_with_names.tsv', sep='\t')
 
 
 # Print out sparseness calculations for all resolutions
