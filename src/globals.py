@@ -1,0 +1,2 @@
+DATA = 'data/'
+RESOLUTION = 1000000
