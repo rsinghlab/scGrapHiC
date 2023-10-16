@@ -1,2 +1,5 @@
 scGrapHiC/
-
+scgraphic/
+*.cool
+*.pyc
+*.png

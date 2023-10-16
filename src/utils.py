@@ -20,8 +20,8 @@ def chrom_bins(chr, chr_size, resolution=RESOLUTION):
     size = chr_size // resolution + 1
 
     chr_names = np.array([chr]*size)
-    starts = (np.arange(0, size, 1, dtype=int))*resolution
-    ends = (np.arange(1, size+1, 1, dtype=int))*resolution
+    starts = (np.arange(0, size, 1, dtype=int))
+    ends = (np.arange(1, size+1, 1, dtype=int))
     
     bins = {
         'chrom': chr_names,
