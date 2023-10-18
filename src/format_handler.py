@@ -58,18 +58,26 @@ def cooler_files_from_pairix_file(input_file, output_folder, chrom_sizes_file):
 
         cooler.create_cooler(output_file, bins, chrom_pixels,
                         dtypes={"count":"int"}, 
-                        assembly="hg19")
+                        assembly="mm10")
         
 
 
 
-def extract_dense_matrix_from_cooler_file(cooler_path):
+def extract_dense_matrix_from_cooler_file(cooler_path, log=True):
     chr = cooler_path.split('/')[-1].split('.')[0]
+    clr = cooler.Cooler(cooler_path)
+    matrix = clr.matrix(balance=False).fetch(chr)
+    # shape = matrix._shape
+    # full_range = '{}:{}-{}'.format(chr, 0, shape[0])
+    # data = matrix.fetch(full_range,full_range).astype("float")
+    if log:
+        return np.log2(matrix + 1)
+    else: 
+        return matrix
 
-    c = cooler.Cooler(cooler_path)
-    matrix = c.matrix(balance=False)
-    shape = matrix._shape
-    full_range = '{}:{}-{}'.format(chr, 0, shape[0])
-    
-    return matrix.fetch(full_range,full_range).astype("float")
-    
+
+def read_cell_by_gene_matrix(path):
+    pass
+
+
+
