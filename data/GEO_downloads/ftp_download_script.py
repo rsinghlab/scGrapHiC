@@ -1,7 +1,7 @@
 import wget
 import os
 
-file = open('download_pairs_experiment/GSE223917_series_matrix.txt', mode = 'r', encoding = 'utf-8-sig')
+file = open('GSE223917_series_matrix.txt', mode = 'r', encoding = 'utf-8-sig')
 lines = file.readlines()
 file.close()
 urls = ""
