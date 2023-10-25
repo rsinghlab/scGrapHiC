@@ -1,9 +1,14 @@
 import os
 import cooler
 
+import scanpy as sc
 import pandas as pd
+
 from src.utils import *
 from src.globals import *
+from anndata import AnnData
+
+
 
 def read_pairix_file(path):
     '''
@@ -67,9 +72,6 @@ def extract_dense_matrix_from_cooler_file(cooler_path, log=True):
     chr = cooler_path.split('/')[-1].split('.')[0]
     clr = cooler.Cooler(cooler_path)
     matrix = clr.matrix(balance=False).fetch(chr)
-    # shape = matrix._shape
-    # full_range = '{}:{}-{}'.format(chr, 0, shape[0])
-    # data = matrix.fetch(full_range,full_range).astype("float")
     if log:
         return np.log2(matrix + 1)
     else: 
@@ -77,7 +79,37 @@ def extract_dense_matrix_from_cooler_file(cooler_path, log=True):
 
 
 def read_cell_by_gene_matrix(path):
-    pass
+    cell_by_gene_data = pd.read_csv(
+        path, sep='\t',
+        comment='#'
+    )
+    return cell_by_gene_data
 
+
+def normalize_cell_by_gene_matrix(cell_by_gene_matrix):
+    X = cell_by_gene_matrix.iloc[1:, 1:].to_numpy()
+    genes = cell_by_gene_matrix.iloc[1:, 0:1].to_numpy()
+    cells = cell_by_gene_matrix.columns[1:].to_numpy()
+
+    adata = AnnData(X.T)
+    X_norm = sc.pp.normalize_total(adata, target_sum=1, inplace=False)['X']
+    X_norm = X_norm.T
+
+    cell_by_gene_matrix = pd.DataFrame(data=X_norm, index=genes, columns=cells)
+
+
+    print(cell_by_gene_matrix)
+
+
+
+
+def convert_cell_by_gene_to_coordinate_matrix(cell_by_gene_matrix, gene_coordinate_file):
+    gene_coordinates = pd.read_csv(gene_coordinate_file)
+    # Inner join on both tables and we drop the gene_names because thats a more comprehensive list (to remove rows with NaNs). 
+    merged_tables = pd.merge(gene_coordinates, cell_by_gene_matrix, left_on='gene_name', right_on='gene', how='left').drop('gene_name', axis=1)
+    print(merged_tables)
+    print(merged_tables[merged_tables.isna().any(axis=1)])
+    
+    return 
 
 

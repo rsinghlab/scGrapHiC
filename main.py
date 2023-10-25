@@ -1,9 +1,12 @@
-from src.format_handler import extract_dense_matrix_from_cooler_file, cooler_files_from_pairix_file
+from src.format_handler import read_cell_by_gene_matrix, convert_cell_by_gene_to_coordinate_matrix, normalize_cell_by_gene_matrix
 from src.visualizations import visualize_hic_contact_matrix
 from src.matrix_imputations import matImpute
 from src.utils import process_GTF3_file
 
-process_GTF3_file('data/mm10/gencode.vM23.annotation.gff3.gz')
+cell_by_gene_matrix = read_cell_by_gene_matrix('data/mm10/HiRES/scRNA-seq/GSE223917_HiRES_brain.rna.umicount.tsv.gz')
+normalize_cell_by_gene_matrix(cell_by_gene_matrix)
+
+#coordinate_matrix = convert_cell_by_gene_to_coordinate_matrix(cell_by_gene_matrix, 'data/mm10/gene_coordinates.csv')
 
 # cooler_files_from_pairix_file(
 #     'data/mm10/HiRES/scHi-C/GasaE751001/GSM6998595_GasaE751001.pairs.gz',
