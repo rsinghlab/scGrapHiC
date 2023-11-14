@@ -4,3 +4,7 @@ scgraphic/
 *.pyc
 *.png
 hickit-0.1_x64-linux/
+main
+*.out
+lightning_logs/
+.vscode/

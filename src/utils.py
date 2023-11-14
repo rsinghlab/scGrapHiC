@@ -3,7 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 
-from src.globals import RESOLUTION
+def create_directory(path):
+	if not os.path.exists(path):
+		try:
+			# Create the directory
+			os.makedirs(path)
+		except OSError as e:
+			print(f"Error: {e}")
+
 
 
 def read_chromsizes_file(path):
@@ -16,7 +23,7 @@ def read_chromsizes_file(path):
 
 
 
-def chrom_bins(chr, chr_size, resolution=RESOLUTION):
+def chrom_bins(chr, chr_size, resolution):
     size = chr_size // resolution + 1
 
     chr_names = np.array([chr]*size)
@@ -42,31 +49,7 @@ def get_gene_name(attributes):
 
 
 
-def process_GTF3_file(path):
-    output_path = os.path.join('/'.join(path.split('/')[:-1]), 'gene_coordinates.csv')
 
-    data = pd.read_csv(
-            path, header = None,
-            comment ='#', sep ='\t', 
-            names=[
-                'seqid', 
-                'source', 'type',
-                'start', 'end', 
-                'score', 'strand', 'phase', 
-                'attributes'
-            ]
-
-        )
-    
-    # We only need the genes annotations
-    data = data.loc[data['type'] == 'gene']
-    # We only need the gene name
-    data['attributes'] = data['attributes'].map(lambda x: get_gene_name(x))
-
-    data = data.drop(columns=['source', 'type', 'score', 'phase'])
-    data = data.rename(columns={'seqid': 'chr', 'attributes': 'gene_name'})
-    
-    data.to_csv(output_path, index=False)
 
 
 

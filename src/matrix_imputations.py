@@ -111,16 +111,13 @@ def gkern(kernlen=3, nsig=1):
     return kernel
 
 
-def neighbor_ave_cpu(A, pad, mask="Bilateral", nsig=1):
+def neighbor_ave_cpu(A, pad, mask="Gaussian", nsig=1):
     '''
     Convolution smooth
     '''
 
     if pad == 0:
         return A
-
-    # Remove diagonal
-    np.fill_diagonal(A, 0)
 
     maskLength = pad*2 + 1
     maskKern = []
@@ -130,8 +127,10 @@ def neighbor_ave_cpu(A, pad, mask="Bilateral", nsig=1):
         maskKern = gkern(maskLength, nsig)
     if mask == "Bilateral":
         return bilateral(A, pad, pad)
+    A = (ndimage.convolve(A, maskKern, mode='constant', cval=0.0) / float(maskLength * maskLength))
+    
 
-    return (ndimage.convolve(A, maskKern, mode='constant', cval=0.0) / float(maskLength * maskLength))
+    return A
 
 
 def random_walk_cpu(A, rp):
