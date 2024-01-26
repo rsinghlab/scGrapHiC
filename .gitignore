@@ -1,5 +1,11 @@
 scGrapHiC/
 scgraphic/
+logs/
+outputs/
+tests/
+visualizations/
+.vscode/
+scripts/
 *.cool
 *.pyc
 *.png
@@ -7,4 +13,3 @@ hickit-0.1_x64-linux/
 main
 *.out
 lightning_logs/
-.vscode/

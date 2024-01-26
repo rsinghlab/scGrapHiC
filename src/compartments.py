@@ -174,14 +174,6 @@ def sqrt_norm(matrix):
 	return matrix
 
 
-def smooth_data_fft(arr, span):  # the scaling of "span" is open to suggestions
-    w = rfft(arr)
-    spectrum = w ** 2
-    cutoff_idx = spectrum < (spectrum.max() * (1 - np.exp(-span / 2000)))
-    w[cutoff_idx] = 0
-    return irfft(w)
-
-
 def kth_diag_indices(a, k):
 	rows, cols = np.diag_indices_from(a)
 	if k < 0:
@@ -214,9 +206,6 @@ def pearson(matrix):
 
 def compartment(matrix, expected=None):
     contact = matrix
-    # np.fill_diagonal(contact, np.max(contact))
-    # contact = KRnormalize(matrix)
-    # contact[np.isnan(contact)] = 0.0
     
     contact = sqrt_norm(matrix)
     contact = oe(contact, expected)

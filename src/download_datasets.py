@@ -22,6 +22,8 @@ def create_directory_structure():
     create_directory(MOUSE_RAW_DATA_SCHIC)
     create_directory(MOUSE_RAW_DATA_SCRNASEQ)
     create_directory(MOUSE_RAW_BULK_DATA)
+    create_directory(MOUSE_RAW_MOTIFS_DATA)
+    
     create_directory(MOUSE_RAW_DATA_PSEUDO_BULK)
     create_directory(MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ)
     create_directory(MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC)
@@ -31,10 +33,12 @@ def create_directory_structure():
     create_directory(MOUSE_PREPROCESSED_DATA_SCHIC)
     create_directory(MOUSE_PREPROCESSED_DATA_SCRNASEQ)
     create_directory(MOUSE_PREPROCESSED_DATA_BULK)
-    
+    create_directory(MOUSE_PREPROCESSED_MOTIFS_DATA)
     
     create_directory(MOUSE_PROCESSED_DATA_HIRES)
     
+    create_directory(MODEL_WEIGHTS)
+    create_directory(RESULTS)
     
     # Download the series matrix file
     if not os.path.exists(HIRES_SERIES_MATRIX_FILE):
@@ -54,6 +58,30 @@ def create_directory_structure():
         wget.download(
             'https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/1181c0c4-afb7-4b6a-9fdc-d868fb2253fc/4DNFI1EYIGOC.hic',
             MOUSE_PN5_ZYGOTE_BULK_HIC
+        )
+    
+    if not os.path.exists(MOUSE_EARLY_TWO_CELL_BULK_HIC):
+        wget.download(
+            'https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/f54efece-280f-46ca-95e3-1f8a3cd18820/4DNFIK4CECUH.hic',
+            MOUSE_EARLY_TWO_CELL_BULK_HIC
+        )
+    
+    if not os.path.exists(MOUSE_LATE_TWO_CELL_HIC):
+        wget.download(
+            'https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/cc2b78fd-52d4-4e0c-ac93-b84ee82daf7e/4DNFICXCFGEI.hic',
+            MOUSE_LATE_TWO_CELL_HIC
+        )
+    
+    if not os.path.exists(MOUSE_EIGHT_CELL_BULK_HIC):
+        wget.download(
+            'https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/31af1ead-4520-4669-957e-424b4b197c33/4DNFIFA89L5B.hic',
+            MOUSE_EIGHT_CELL_BULK_HIC
+        )
+    
+    if not os.path.exists(MOUSE_INNER_CELL_MASS_BULK_HIC):
+        wget.download(
+            'https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/3e082eab-95aa-4677-88ed-9d7adcc1effb/4DNFIK5HY1GP.hic',
+            MOUSE_INNER_CELL_MASS_BULK_HIC
         )
     
     if not os.path.exists(MOUSE_MESC_BULK_HIC):
@@ -137,10 +165,6 @@ def download_hires_scrnaseq_datasets():
     )
 
 
-
-def psuedo_bulk_divisions():
-    
-    return 
 
 
 

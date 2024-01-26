@@ -62,10 +62,20 @@ def process_gtf3_file(gtf3_filepath, output_path):
 
 
 def read_cell_by_gene_matrix(path):
+    format = path.split('/')[-1].split('.')[-2]
+    
+    if format == 'csv':
+        sep = ','
+    elif format == 'tsv':
+        sep = '\t'
+    else:
+        sep = None
+    
     cell_by_gene_data = pd.read_csv(
-        path, sep='\t',
+        path, sep=sep,
         comment='#'
     )
+    
     return cell_by_gene_data
 
 def normalize_cell_by_gene_matrix(cell_by_gene_matrix):
@@ -83,12 +93,41 @@ def normalize_cell_by_gene_matrix(cell_by_gene_matrix):
 
 def convert_cell_by_gene_to_coordinate_matrix(cell_by_gene_matrix, gene_coordinate_file):
     gene_coordinates = pd.read_csv(gene_coordinate_file)
+    
     # Left join on both tables and we drop the gene_names and have NaNs at genes that were filtered, we replace them with 0s. 
     merged_tables = pd.merge(gene_coordinates, cell_by_gene_matrix, left_on='gene_name', right_on='gene', how='left').drop('gene_name', axis=1)
 
     return merged_tables
 
 
+def create_coordinate_matrix_file(scrna_seq_file, gene_cooridate_file_path, output_folder, PARAMETERS):
+    scrna_seq_file_name = scrna_seq_file.split('/')[-1].split('.')[0]
+    output_intermediate_file = os.path.join(output_folder, scrna_seq_file_name + '.csv')
+    
+    if os.path.exists(output_intermediate_file):
+        print('Coordinate matrix file {} already exists'.format(output_intermediate_file))
+        return output_intermediate_file
+    
+    # Step 1: read the file into a pandas dataframe
+    cell_by_gene_data = read_cell_by_gene_matrix(scrna_seq_file)
+
+    # Step 1.5: normalize the cell-by-gene matrix file 
+    if PARAMETERS['normalize_umi']:
+        cell_by_gene_data = normalize_cell_by_gene_matrix(cell_by_gene_data)
+    
+    # Step 2: convert it into a gene coordinate format
+    coordinate_matrix = convert_cell_by_gene_to_coordinate_matrix(cell_by_gene_data, gene_cooridate_file_path)
+    
+    # Checkpoint here, and store the coordinate matrix file
+    print('Saving coordinate matrix file {}'.format(output_intermediate_file))
+    coordinate_matrix.to_csv(output_intermediate_file)
+    
+    
+    return output_intermediate_file
+    
+    
+    
+    
 def merge_chr_coordinates(coordinates):
     # Aggregate the UMI reads based on the starting and ending coordinate
     coordinates = coordinates.groupby(['start', 'end']).sum()
@@ -101,9 +140,11 @@ def merge_chr_coordinates(coordinates):
 
 def normalize_genomic_track(reads, PARAMETERS):
     sum_reads = np.sum(reads)
-    reads = np.divide(reads, sum_reads) * PARAMETERS['library_size']
+    reads = np.divide(reads, sum_reads)
+    reads = reads * PARAMETERS['library_size']
     reads = np.log1p(reads)
     reads = reads/np.max(reads)
+    
     return reads
     
 
@@ -113,7 +154,7 @@ def create_genomic_track(starts, ends, reads, chrsize, PARAMETERS):
     track = np.zeros(size)
     
     for i in range(starts.shape[0]):
-        track[starts[i]:ends[i] + 1] += reads[i]/(starts[i] + ends[i])
+        track[starts[i]:ends[i] + 1] += reads[i]/((ends[i] + 1) - starts[i])
     
     if PARAMETERS['normalize_track']:
         track = normalize_genomic_track(track, PARAMETERS)
@@ -121,7 +162,79 @@ def create_genomic_track(starts, ends, reads, chrsize, PARAMETERS):
     return track
 
 
-def parse_hires_scrnaseq_datasets(PARAMETERS):
+
+def create_genomic_track_file(preprocessed_coordinate_matrix, PARAMETERS, output_path, pseudobulk=False):
+    chrom_sizes = read_chromsizes_file(os.path.join(MOUSE_RAW_DATA, 'chrom.sizes'))    
+    coordinate_matrix = pd.read_csv(preprocessed_coordinate_matrix)
+    coordinate_matrix = coordinate_matrix.loc[:, ~coordinate_matrix.columns.str.contains('^Unnamed')]
+    
+    # Step 3: proces this coordinate matrix with pandas operations
+    # Step 3.1: Replace NaNs with zeros
+    coordinate_matrix.dropna(subset=['gene'], inplace=True)
+    coordinate_matrix = coordinate_matrix.fillna(0)
+    
+    # Step 3.2: Convert coordinate scale in accordance with the resolution
+    coordinate_matrix['start'] = coordinate_matrix['start'].copy().floordiv(PARAMETERS['resolution'])
+    coordinate_matrix['end'] = coordinate_matrix['end'].copy().floordiv(PARAMETERS['resolution'])
+    
+    # Step 3.3: divide the positive and negative strands into two dataframes
+    positive_strand_coordinates = coordinate_matrix.loc[coordinate_matrix['strand'] == '+']
+    negative_strand_coordinates = coordinate_matrix.loc[coordinate_matrix['strand'] == '-']
+    
+    # Step 3.4: All cell types
+    cells = list(coordinate_matrix.columns[5:])
+    
+    # Step 4: for each chromosome extract the track for each cell
+    for chromosome, size in chrom_sizes.items():
+        # step 4.1: extract reads only specific to a chromosome
+        chr_positive_strand_coordinates = positive_strand_coordinates.loc[positive_strand_coordinates['chr'] == chromosome]
+        chr_negative_strand_coordinates = negative_strand_coordinates.loc[negative_strand_coordinates['chr'] == chromosome]
+        
+        # step 4.2: merge the coordinates that overlap
+        chr_positive_strand_coordinates = merge_chr_coordinates(chr_positive_strand_coordinates)
+        chr_negative_strand_coordinates = merge_chr_coordinates(chr_negative_strand_coordinates)
+        
+        #step 4.3: for each cell extract the tracks
+        for cell in cells:
+            if pseudobulk:
+                # For pseudo-bulking we have to store the other paramters of pseudobulking
+                stage, tissue, cell_type, num_cells = get_file_name_parameters(preprocessed_coordinate_matrix)
+                folder = '_'.join([stage, tissue, cell_type, 'n{}'.format(num_cells), 'scrnaseq']) if stage else  '_'.join([tissue, cell_type, 'n{}'.format(num_cells, 'scrnaseq')])
+                output_folder = os.path.join(output_path, folder)
+            else:
+                output_folder = os.path.join(output_path, cell)
+            
+            create_directory(output_folder)
+            
+            output_file = os.path.join(output_folder, '{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
+            
+            #step 4.4: extract both postive and negative tracks
+            positive_track = create_genomic_track(
+                chr_positive_strand_coordinates['start'].to_numpy(), 
+                chr_positive_strand_coordinates['end'].to_numpy(), 
+                chr_positive_strand_coordinates[cell].to_numpy(), 
+                size,
+                PARAMETERS
+            )
+            
+            negative_track = create_genomic_track(
+                chr_negative_strand_coordinates['start'].to_numpy(), 
+                chr_negative_strand_coordinates['end'].to_numpy(), 
+                chr_negative_strand_coordinates[cell].to_numpy(), 
+                size,
+                PARAMETERS
+            )
+            
+            combined_tracks = np.stack((positive_track, negative_track))
+            
+            # save the tracks
+            print('Saving: {}'.format(output_file))
+            
+            np.save(output_file, combined_tracks)
+
+
+
+def parse_hires_scrnaseq_datasets(input_path, PARAMETERS, output_path, pseudobulk=False):
     '''
         This function parses the scRNA-seq datasets from cell-by-gene to geneome coordinate tracks
     '''
@@ -135,97 +248,31 @@ def parse_hires_scrnaseq_datasets(PARAMETERS):
             gene_cooridate_file_path
         )
 
-    chrom_sizes = read_chromsizes_file(os.path.join(MOUSE_RAW_DATA, 'chrom.sizes'))
     
     
-    scrna_seq_files = list(map(lambda x: os.path.join(MOUSE_RAW_DATA_SCRNASEQ, x), os.listdir(MOUSE_RAW_DATA_SCRNASEQ)))
+    
+    scrna_seq_files = list(map(lambda x: os.path.join(input_path, x), os.listdir(input_path)))
     
     preprocessed_coordinate_matrices = []
     # For all the cell-by-gene UMI matrix files we do
     for scrna_seq_file in scrna_seq_files:
-        scrna_seq_file_name = scrna_seq_file.split('/')[-1].split('.')[0]
-        output_intermediate_file = os.path.join(MOUSE_PREPROCESSED_DATA_SCRNASEQ, scrna_seq_file_name + '.csv')
+        output_intermediate_file = create_coordinate_matrix_file(
+            scrna_seq_file,
+            gene_cooridate_file_path,
+            output_path,
+            PARAMETERS
+        )
         preprocessed_coordinate_matrices.append(output_intermediate_file)
-        
-        if os.path.exists(output_intermediate_file):
-           continue 
-        
-        # Step 1: read the file into a pandas dataframe
-        cell_by_gene_data = read_cell_by_gene_matrix(scrna_seq_file)
-
-        # Step 1.5: normalize the cell-by-gene matrix file 
-        if PARAMETERS['normalize_umi']:
-            cell_by_gene_data = normalize_cell_by_gene_matrix(cell_by_gene_data)
-        
-        # Step 2: convert it into a gene coordinate format
-        coordinate_matrix = convert_cell_by_gene_to_coordinate_matrix(cell_by_gene_data, gene_cooridate_file_path)
-        
-        # Checkpoint here, and store the coordinate matrix file
-        coordinate_matrix.to_csv(output_intermediate_file)
+    
     
     for preprocessed_coordinate_matrix in preprocessed_coordinate_matrices:
-        coordinate_matrix = pd.read_csv(preprocessed_coordinate_matrix)
-        coordinate_matrix = coordinate_matrix.loc[:, ~coordinate_matrix.columns.str.contains('^Unnamed')]
-        
-        # Step 3: proces this coordinate matrix with pandas operations
-        # Step 3.1: Replace NaNs with zeros
-        coordinate_matrix.dropna(subset=['gene'], inplace=True)
-        coordinate_matrix = coordinate_matrix.fillna(0)
-        
-        # Step 3.2: Convert coordinate scale in accordance with the resolution
-        coordinate_matrix['start'] = coordinate_matrix['start'].copy().floordiv(PARAMETERS['resolution'])
-        coordinate_matrix['end'] = coordinate_matrix['end'].copy().floordiv(PARAMETERS['resolution'])
-        
-        # Step 3.3: divide the positive and negative strands into two dataframes
-        positive_strand_coordinates = coordinate_matrix.loc[coordinate_matrix['strand'] == '+']
-        negative_strand_coordinates = coordinate_matrix.loc[coordinate_matrix['strand'] == '-']
-        
-        # Step 3.4: All cell types
-        cells = list(coordinate_matrix.columns[5:])
-        
-        # Step 4: for each chromosome extract the track for each cell
-        for chromosome, size in chrom_sizes.items():
-            # step 4.1: extract reads only specific to a chromosome
-            chr_positive_strand_coordinates = positive_strand_coordinates.loc[positive_strand_coordinates['chr'] == chromosome]
-            chr_negative_strand_coordinates = negative_strand_coordinates.loc[negative_strand_coordinates['chr'] == chromosome]
-            
-            # step 4.2: merge the coordinates that overlap
-            chr_positive_strand_coordinates = merge_chr_coordinates(chr_positive_strand_coordinates)
-            chr_negative_strand_coordinates = merge_chr_coordinates(chr_negative_strand_coordinates)
-            
-            #step 4.3: for each cell extract the tracks
-            for cell in cells:
-                # if os.path.exists(output_file):
-                #     continue 
-                output_folder = os.path.join(MOUSE_PREPROCESSED_DATA_SCRNASEQ, cell)
-                create_directory(output_folder)
-                
-                output_file = os.path.join(output_folder, '{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
-                
-               
-                
-                #step 4.4: extract both postive and negative tracks
-                positive_track = create_genomic_track(
-                    chr_positive_strand_coordinates['start'].to_numpy(), 
-                    chr_positive_strand_coordinates['end'].to_numpy(), 
-                    chr_positive_strand_coordinates[cell].to_numpy(), 
-                    size,
-                    PARAMETERS
-                )
-                
-                negative_track = create_genomic_track(
-                    chr_negative_strand_coordinates['start'].to_numpy(), 
-                    chr_negative_strand_coordinates['end'].to_numpy(), 
-                    chr_negative_strand_coordinates[cell].to_numpy(), 
-                    size,
-                    PARAMETERS
-                )
-                
-                combined_tracks = np.stack((positive_track, negative_track))
-                # save the tracks
-                print('Saving: {}'.format(output_file))
-                
-                np.save(output_file, combined_tracks)
+        create_genomic_track_file(
+            preprocessed_coordinate_matrix, 
+            PARAMETERS, 
+            output_path,
+            pseudobulk
+        )
+    
         
                 
 
@@ -262,7 +309,6 @@ def read_pairix_file(path):
             }
 
         )
-        
         data['pos1'] = pd.to_numeric(data["pos1"])
         data['pos2'] = pd.to_numeric(data["pos2"])
 
@@ -277,25 +323,18 @@ def convert_pairs_to_pixels(dataframe, PARAMETERS):
     return pixels
 
   
-def normalize_schic_matrix(matrix, PARAMETERS):
-    sum_reads = np.sum(matrix)
-    matrix = np.divide(matrix, sum_reads) * PARAMETERS['library_size']
-    matrix = np.log1p(matrix)
-    matrix = matrix/np.max(matrix)
-    return matrix
-     
 
             
-def parse_hires_schic_datasets(PARAMETERS):
+def parse_hires_schic_datasets(input_path, PARAMETERS, output_path):
     chrom_sizes = read_chromsizes_file(os.path.join(MOUSE_RAW_DATA, 'chrom.sizes'))
-    schic_files = list(map(lambda x: os.path.join(MOUSE_RAW_DATA_SCHIC, x), os.listdir(MOUSE_RAW_DATA_SCHIC)))            
+    schic_files = list(map(lambda x: os.path.join(input_path, x), os.listdir(input_path)))            
     
     
     for schic_file in schic_files:
-        if '.pairs.gz' in schic_file and os.path.exists(schic_file):
+        if '.pairs' in schic_file and os.path.exists(schic_file):
             # Step 0: create the output directory
             cell_name = schic_file.split('/')[-1].split('.')[0]
-            output_directory = os.path.join(MOUSE_PREPROCESSED_DATA_SCHIC, cell_name)
+            output_directory = os.path.join(output_path, cell_name)
             create_directory(output_directory)
             
             # Step 1: parse the .pairs.gz file 
@@ -304,13 +343,9 @@ def parse_hires_schic_datasets(PARAMETERS):
             
             
             for chromosome, size in chrom_sizes.items():
-                if chromosome != 'chr1':
-                    continue
                 
                 output_cooler_file = os.path.join(output_directory, '{}_{}.cool'.format(chromosome, PARAMETERS['resolution']))
                 output_numpy_file = os.path.join(output_directory, '{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
-                output_compartments_file = os.path.join(output_directory, 'compartments_{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
-                output_TADs_file = os.path.join(output_directory, 'TADs_{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
                 
                 chrom_data = pairs_data.loc[(pairs_data['chr1'] == chromosome) & (pairs_data['chr2'] == chromosome)]
                 chrom_pixels = convert_pairs_to_pixels(chrom_data, PARAMETERS)
@@ -323,34 +358,10 @@ def parse_hires_schic_datasets(PARAMETERS):
                 # Read and normalize and save as a npy file
                 clr = cooler.Cooler(output_cooler_file)
                 matrix = clr.matrix(balance=False).fetch(chromosome)
-                
-                # Remove diagonal
-                normalized_matrix = normalize_schic_matrix(matrix, PARAMETERS)
-                
+
                 #  Saving the entire matrix 
                 print('Saving: {}'.format(output_numpy_file))
-                np.save(output_numpy_file, normalized_matrix)
-                
-                
-                # Generate A/B compartments and save them
-                compartments = ABcompartment_from_mat(
-                    normalized_matrix,
-                    chromosome,
-                    os.path.join(MM10_CPG_PATH, 'mm10.CpG.{}.txt'.format(PARAMETERS['resolution'])),
-                    PARAMETERS
-                )
-                
-                insulation_vectors = insulation_score(normalized_matrix, PARAMETERS['resolution'])
-                
-                np.save(output_compartments_file, compartments)
-                np.save(output_TADs_file, insulation_vectors)
-                
-                # visualize_scnrna_seq_tracks(compartments, 'compartments.png')
-                # visualize_scnrna_seq_tracks(insulation_vectors, 'insulation_vectors.png')
-                
-                # visualize_hic_contact_matrix(normalized_matrix, 'hic_matrix.png')
-                # exit(1)
-                
+                np.save(output_numpy_file, matrix)
                 
 
 
@@ -490,11 +501,121 @@ def parse_bulk_datasets(PARAMETERS):
         
         parse_hic_file(bulk_hic_file, output_folder, PARAMETERS)
         
+        
+        
+def create_motif_track(motif_data, chrsize, PARAMETERS):
+    motif_data = motif_data.groupby(['start', 'end']).sum()
+    motif_data = motif_data.drop(['chr', 'strand'], axis=1)
+    motif_data = motif_data.reset_index()
+    
+    
+    starts = motif_data['start'].to_numpy()
+    ends = motif_data['end'].to_numpy()
+    reads = motif_data['score'].to_numpy()
+    
+    size = chrsize // PARAMETERS['resolution'] + 1
+    track = np.zeros(size)
+    
+    for i in range(starts.shape[0]):
+        track[starts[i]:ends[i] + 1] += reads[i]/((ends[i]+1) - starts[i])
+
+    return track
+    
+    
+
  
+def parse_motif_file(motif_file, output, PARAMETERS):
+    if 'ctcf' == output.split('/')[-1]:
+        # Motif specific pre-processing
+        motif_data = pd.read_csv(
+            motif_file, sep='\t',
+            comment='#',
+            names=[
+                'chr', 'start', 'end',
+                'ukwn', 'strand', 'name', 
+                'score', 'p-value', 'q-value', 
+                'sequence'
+            ]
+        )
+        motif_data = motif_data.drop(columns=['ukwn', 'name', 'p-value', 'q-value', 'sequence'])
+        motif_data['start'] = pd.to_numeric(motif_data["start"])
+        motif_data['end'] = pd.to_numeric(motif_data["end"])
+    
+    elif 'cpg' == output.split('/')[-1]:
+        motif_file = os.path.join(motif_file, 'cpg_{}.txt'.format(PARAMETERS['resolution']))
+        motif_data = pd.read_csv(
+            motif_file, sep='\t',
+            comment='#',
+            names=[
+                'chr', 'start', 'score'
+            ]
+        )
+        motif_data['end'] = motif_data['start']
+        motif_data['start'] = pd.to_numeric(motif_data["start"]).astype('int')
+        motif_data['end'] = pd.to_numeric(motif_data["end"]).astype('int')
+        motif_data['strand'] = ['+']*len(motif_data['start'].tolist())
+        
+    else:
+        print('Invalid Motif file')
+        exit(1)
+    
+    # Assuming now we have chr, start, end, strand and a scores
+    motif_data['start'] = motif_data['start'].copy().floordiv(PARAMETERS['resolution'])
+    motif_data['end'] = motif_data['end'].copy().floordiv(PARAMETERS['resolution'])
+    
+    positive_strand_motifs = motif_data.loc[motif_data['strand'] == '+']
+    negative_strand_motifs = motif_data.loc[motif_data['strand'] == '-']
+    
+    chrom_sizes = read_chromsizes_file(os.path.join(MOUSE_RAW_DATA, 'chrom.sizes')) 
+    
+    
+    for chromosome, size in chrom_sizes.items():
+        output_file = os.path.join(output, '{}_{}.npy'.format(chromosome, PARAMETERS['resolution']))
+        
+        chr_positive_strand_motifs = positive_strand_motifs.loc[positive_strand_motifs['chr'] == chromosome]
+        chr_negative_strand_motifs = negative_strand_motifs.loc[negative_strand_motifs['chr'] == chromosome]
+        
+        positive_track = create_motif_track(chr_positive_strand_motifs, size, PARAMETERS)
+        negative_track = create_motif_track(chr_negative_strand_motifs, size, PARAMETERS)
+        
+        if negative_track.sum() != 0:
+            combined_tracks = np.stack((positive_track, negative_track))
+        else:
+            combined_tracks = positive_track
+            combined_tracks = combined_tracks.reshape((1, -1))
+        
+        print('Saving: {}'.format(output_file))
+        
+        np.save(output_file, combined_tracks)
+    
+
+
+
+def parse_motifs_datasets(PARAMETERS):
+    motif_files = list(map(lambda x: os.path.join(MOUSE_RAW_MOTIFS_DATA, x), os.listdir(MOUSE_RAW_MOTIFS_DATA)))
+    
+    for motif_file in motif_files:
+        motif_file_name = motif_file.split('/')[-1].split('.')[0]
+        output_folder = os.path.join(MOUSE_PREPROCESSED_MOTIFS_DATA, motif_file_name)
+        create_directory(output_folder)
+        
+        parse_motif_file(motif_file, output_folder, PARAMETERS)
+
+
+
+
+
 def preprocess_hires_datasets(PARAMETERS):
     '''
         This function parses both scRNA-seq and scHi-C datasets
     '''
-    # parse_hires_scrnaseq_datasets(PARAMETERS)
-    parse_hires_schic_datasets(PARAMETERS)
-    # parse_bulk_datasets(PARAMETERS)
+    # parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCRNASEQ)
+    # parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCRNASEQ, True)
+    
+    # parse_hires_schic_datasets(MOUSE_RAW_DATA_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCHIC)
+    # parse_hires_schic_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCHIC)
+    
+    parse_bulk_datasets(PARAMETERS)
+    parse_motifs_datasets(PARAMETERS)
+    
+    

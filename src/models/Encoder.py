@@ -5,7 +5,10 @@ import torch.nn.functional as F
 
 
 from torch import nn
-from torch.nn import Conv1d, LeakyReLU, BatchNorm1d
+from torch_geometric.nn import GATv2Conv
+from torch_geometric.nn.norm import GraphNorm
+from torch_geometric.utils import to_dense_batch
+from torch.nn import Conv1d, LeakyReLU, BatchNorm1d, Linear, ModuleList
 
 
 
@@ -123,11 +126,16 @@ class EncoderBlock(pl.LightningModule):
         return x
 
 
-class Encoder(pl.LightningModule):
+class ChIPSeqProcessor(pl.LightningModule):
     def __init__(self, PARAMETERS):
-        super(Encoder, self).__init__()
-        self.number_channels = PARAMETERS['rna_seq_tracks'] + PARAMETERS['pos_encodings_dim']
+        super(ChIPSeqProcessor, self).__init__()
         
+        if PARAMETERS['positional_encodings']:
+            self.number_channels = PARAMETERS['node_features'] + PARAMETERS['pos_encodings_dim']
+        else: 
+            self.number_channels = PARAMETERS['node_features']
+
+        self.PARAMETERS = PARAMETERS
         # Feature extractor
         self.feature_extractor = Conv1d(
             in_channels=self.number_channels,
@@ -137,12 +145,11 @@ class Encoder(pl.LightningModule):
         )
         
         self.lr_0 = LeakyReLU()
-        self.relu = nn.ReLU()
         self.act = nn.Sigmoid()
         
         self.batch_norm_0 = BatchNorm1d(PARAMETERS['encoder_hidden_embedding_size'])
         
-        # Self attention to learn the relationships between the features conditional on their positioning as well
+        # Self attention to learn the relationships between the features conditional on their positioning (in the prior)
         self.encoder_blocks = nn.ModuleList()
         for _ in range(PARAMETERS['num_encoder_attn_blocks']):
             self.encoder_blocks.append(
@@ -152,22 +159,102 @@ class Encoder(pl.LightningModule):
                     num_heads=PARAMETERS['num_heads_encoder_attn_blocks']
                 )
             )
-        
+            
 
-        
-
-    def forward(self, x):
+    def forward(self, x, pe):
         # Feature extraction phase
         if len(x.shape) > 3:
             print("Bad input to the Encoder with shape {}".format(x.shape))
             exit(1) # Bad input
         
+        if self.PARAMETERS['positional_encodings']:
+            x = torch.cat((x, pe), dim=2)
+        
+        x = x.permute(0, 2, 1)
         x = self.batch_norm_0(self.lr_0(self.feature_extractor(x)))
         x = x.permute(0, 2, 1)
-
+        
         for encoder_block in self.encoder_blocks:
-            x = self.relu(encoder_block(x))
+            x = encoder_block(x)
 
         return self.act(x)
 
-##############################################################################################################################################################
+
+class GraphConvolution(pl.LightningModule):
+    def __init__(self, channels, heads, edge_dim):
+        super().__init__()
+
+        self.conv = GATv2Conv(
+            in_channels = channels,
+            out_channels = channels,
+            heads = heads, 
+            edge_dim = edge_dim,
+        )
+        self.linear = Linear(channels, channels)
+        self.bn = GraphNorm(channels)
+
+    def forward(self, x, edge_index, edge_attr, batch):
+        x_ = self.conv(x, edge_index, edge_attr)
+        x_ = F.relu(self.linear(x))
+        x_ = self.bn(x, batch)
+        return x + x_
+
+
+########################################################## ENCODER ###################################################################################
+
+class GraphEncoder(pl.LightningModule):
+    def __init__(self, PARAMETERS):
+        super().__init__()
+        self.PARAMETERS = PARAMETERS
+        
+        if self.PARAMETERS['positional_encodings']:
+            self.node_emb = Linear(PARAMETERS['encoder_hidden_embedding_size'], PARAMETERS['encoder_hidden_embedding_size'] - PARAMETERS['pos_encodings_dim'])
+        else:
+            self.node_emb = Linear(PARAMETERS['encoder_hidden_embedding_size'], PARAMETERS['encoder_hidden_embedding_size'])
+        
+        self.pe_lin = Linear(PARAMETERS['pos_encodings_dim'], PARAMETERS['pos_encodings_dim'])
+        self.x_norm = BatchNorm1d(PARAMETERS['encoder_hidden_embedding_size'])
+        self.pe_norm = BatchNorm1d(PARAMETERS['pos_encodings_dim'])
+        self.channels = PARAMETERS['encoder_hidden_embedding_size']
+        
+        self.convs = ModuleList()
+
+        for _ in range(PARAMETERS['num_graph_conv_blocks']):
+            conv = GraphConvolution(
+                self.channels, 
+                1, PARAMETERS['edge_dims']
+            )
+            self.convs.append(conv)
+
+        # Transformer encoder blocks to capture long range dependencies     
+        self.encoder_blocks = ModuleList()
+        for _ in range(PARAMETERS['num_graph_encoder_blocks']):
+            self.encoder_blocks.append(
+                EncoderBlock(
+                    dim=self.channels,
+                    hidden_dim=self.channels,
+                    num_heads=PARAMETERS['num_heads_encoder_attn_blocks']
+                )
+            )
+
+    def forward(self, x, pe, edge_index, edge_attr, batch):
+        x = self.x_norm(x)
+        
+        if self.PARAMETERS['positional_encodings']:
+            x_pe = self.pe_norm(pe)
+            x = torch.cat((self.node_emb(x), self.pe_lin(x_pe)), 1)
+
+        if self.PARAMETERS['use_bulk']:
+            for conv in self.convs:
+                x = conv(x, edge_index, edge_attr, batch)
+        
+        x, _ = to_dense_batch(x, batch)
+        
+        for encoder_block in self.encoder_blocks:
+            x = encoder_block(x)
+
+        return x
+
+
+
+

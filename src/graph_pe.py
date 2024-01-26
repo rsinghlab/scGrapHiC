@@ -80,7 +80,7 @@ def eigvec_normalizer(EigVecs, EigVals, normalization="L2", eps=1e-12):
     return EigVecs
 
 
-def graph_pe(matrix, encoding_dim=8, lap_norm='sym', eig_norm='abs-max'):
+def graph_pe(matrix, encoding_dim, lap_norm='sym', eig_norm='abs-max'):
     """
     Compute Laplacian eigen-decomposition-based PE stats of the given graph.
     Args:
@@ -91,6 +91,7 @@ def graph_pe(matrix, encoding_dim=8, lap_norm='sym', eig_norm='abs-max'):
         Tensor (num_nodes, max_freqs, 1) eigenvalues repeated for each node
         Tensor (num_nodes, max_freqs) of eigenvector values per node
     """
+    encoding_dim += 1
     if len(matrix.shape) ==1 and is_perfect_square(matrix.shape[0]):
         matrix = matrix.reshape(math.isqrt(matrix.shape[0]), math.isqrt(matrix.shape[0]))
     
@@ -100,6 +101,7 @@ def graph_pe(matrix, encoding_dim=8, lap_norm='sym', eig_norm='abs-max'):
     
     N = matrix.shape[0]
 
+    
     
     sparse_matrix = sparse.csr_matrix(matrix)
     edge_index, edge_weight = from_scipy_sparse_matrix(sparse_matrix)
@@ -113,10 +115,10 @@ def graph_pe(matrix, encoding_dim=8, lap_norm='sym', eig_norm='abs-max'):
     idx = evals.argsort()[:encoding_dim]
     evals, evects = evals[idx], np.real(evects[:, idx])
     evals = torch.from_numpy(np.real(evals)).clamp_min(0)
-
-    # Normalize and pad eigen vectors.
+     # Normalize and pad eigen vectors.
     evects = torch.from_numpy(evects).float()
     evects = eigvec_normalizer(evects, evals, normalization=eig_norm)
+    
     if N < encoding_dim:
         EigVecs = F.pad(evects, (0, encoding_dim - N), value=float('nan'))
     else:
@@ -129,5 +131,5 @@ def graph_pe(matrix, encoding_dim=8, lap_norm='sym', eig_norm='abs-max'):
         EigVals = evals.unsqueeze(0)
     EigVals = EigVals.repeat(N, 1).unsqueeze(2)
     
-    return EigVecs.cpu().detach().numpy()
+    return EigVecs.cpu().detach().numpy()[:, 1:]
 

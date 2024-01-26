@@ -24,30 +24,21 @@ def pseudobulk_rnaseq(tissue, cell_names, cell_type, stage=None):
     umi_data = umi_data.drop(cell_names, axis=1)
     
     umi_data[cell_type] = umi_data[cell_type]/len(cell_names)
-
+    
     if stage:
         output_path = os.path.join(
             MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ,
-            '{}_{}'.format(stage, tissue)
+            '{}_{}_{}_n{}_umi.csv.gz'.format(stage, tissue, cell_type, len(cell_names))
         )
         
     else:
         output_path = os.path.join(
             MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ,
-            tissue,
+            '{}_{}_n{}_umi.csv.gz'.format(tissue, cell_type, len(cell_names))
         )
     
-    
-    create_directory(output_path)
-    output_file = os.path.join(
-        output_path,
-        '{}_umi.tsv'.format(cell_type) 
-    )
-    
-    print('Saving pseudobulk UMI file at {}'.format(output_file))
-    umi_data.to_csv(output_file)
-    
-    
+    print('Saving pseudobulk UMI file at {}'.format(output_path))
+    umi_data.to_csv(output_path, index=False)
     
     
 
@@ -67,22 +58,18 @@ def pseudobulk_schic(tissue, cell_names, cell_type, stage=None):
     if stage:
         output_path = os.path.join(
             MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC,
-            '{}_{}_n{}'.format(stage, tissue, len(cell_names))
+            '{}_{}_{}_n{}_schic.pairs'.format(stage, tissue, cell_type, len(cell_names))
         )
         
     else:
         output_path = os.path.join(
-            MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ,
-            '{}_n{}'.format(tissue, len(cell_names))
+            MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC,
+            '{}_{}_n{}_schic.pairs'.format(tissue, cell_type, len(cell_names))
         )
-    create_directory(output_path)
     
-    output_file = os.path.join(output_path, '{}_schic.tsv'.format(cell_type))
+    print('Saving pseudobulk scHi-C file at {}'.format(output_path))
+    pseudobulk_dataframe.to_csv(output_path, index=False, header=False, sep ='\t')
     
-    print('Saving pseudobulk scHi-C file at {}'.format(output_file))
-    pseudobulk_dataframe.to_csv(output_file)
-    
-
 
 
 def parse_metadata(metadata):
@@ -102,8 +89,6 @@ def parse_metadata(metadata):
     
     return cell_types, cell_names
     
-    
-    
 
 def create_pseudobulk_files(path):
     metadata = pd.read_excel(path)
@@ -116,14 +101,14 @@ def create_pseudobulk_files(path):
             cell_types, cell_names = parse_metadata(metadata[(metadata['Stage'] == stage)])
             for i, cell_type in enumerate(cell_types):
                 pseudobulk_rnaseq(tissue, cell_names[i], cell_type, stage)
-                
+                pseudobulk_schic(tissue, cell_names[i], cell_type, stage)
     
     elif tissue == 'brain':
         # there is only one type of cells
         cell_types, cell_names = parse_metadata(metadata)
         for i, cell_type in enumerate(cell_types):
             pseudobulk_rnaseq(tissue, cell_names[i], cell_type)
-            pseudobulk_schic(tissue, cell_names[i], cell_type)
+            # pseudobulk_schic(tissue, cell_names[i], cell_type)
             
 
     else:

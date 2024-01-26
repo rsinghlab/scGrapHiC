@@ -1,0 +1,46 @@
+{
+    "stage": {
+        "E70": 0,
+        "E75": 1,
+        "E80": 2,
+        "E85": 3,
+        "E95": 4,
+        "EX05": 5,
+        "EX15": 6,
+        "brain": 7
+    },
+    "tissue": {
+        "embryo": 0,
+        "brain": 1
+    },
+    "cell_type": {
+        "ExE_ectoderm": 0,
+        "ExE_endoderm": 1,
+        "ExE_mesoderm": 2,
+        "blood": 3,
+        "early_mesenchyme": 4,
+        "early_mesoderm": 5,
+        "endoderm": 6,
+        "epiblast_and_PS": 7,
+        "epithelial_cells": 8,
+        "mitosis": 9,
+        "neural_ectoderm": 10,
+        "NMP": 11,
+        "neural_tube": 12,
+        "intermediate_mesoderm": 13,
+        "early_neurons": 14,
+        "mix_late_mesenchyme": 15,
+        "notochord": 16,
+        "oligodendrocytes_and_progenitors": 17,
+        "schwann_cell_precursors": 18,
+        "myocytes": 19,
+        "radial_glias": 20,
+        "Ast": 21,
+        "Ex1": 22,
+        "Ex2": 23,
+        "Ex3": 24,
+        "In1": 25,
+        "In2": 26,
+        "Oli": 27
+    }
+}
