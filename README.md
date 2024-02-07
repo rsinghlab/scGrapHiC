@@ -80,8 +80,54 @@ ood_dataset = GenomicDataset(
     os.path.join(MOUSE_PROCESSED_DATA_HIRES, '{}_ood.npz'.format(PARAMETERS['experiment'])),
     PARAMETERS
 )
+
+train_data_loader =  torch.utils.data.DataLoader(train_dataset, PARAMETERS['batch_size'], shuffle=True)
+validation_data_loader =  torch.utils.data.DataLoader(valid_dataset, PARAMETERS['batch_size'], shuffle=False)
+test_data_loader = torch.utils.data.DataLoader(test_dataset, PARAMETERS['batch_size'], shuffle=False)
+ood_data_loader = torch.utils.data.DataLoader(ood_dataset, PARAMETERS['batch_size'], shuffle=False)
+
 ```
 We have defined an exclusion set list that allows us to control which tissue and cell samples to include in our dataloader. This provides us with a high-level abstraction to easily control the contents of different dataloaders we construct. For instance, we have defined an OOD (out of distribution) dataset which excludes all embryo tissue stages except EX15 and brain. We can then evaluate the performance of our model on out-of-distribution datasets that our model doesnt see during training or testing phases. 
 
-## 
+## Model and Baselines
+The model is implemented with Pytorch and Pytorch Geometric. We have implemented scGrapHiC in such a way that by controlling the command line parameter we can convert it into different baseline implementations. For example:
+- Bulk Only:
+- scRNA-seq Only:
+- scRNA-seq + CTCF:
+- scRNA-seq + CTCF + CpG:
+- scGrapHiC: We implement this version through default command line paramerters.
 
+These models are then trained through pytorch-lightning using the code: 
+
+```
+tb_logger = TensorBoardLogger("logs", name=PARAMETERS['experiment'])
+checkpoint_callback = ModelCheckpoint(monitor="valid/SCC",  save_top_k=3, mode='max')
+scgraphic = scGrapHiC(PARAMETERS)
+
+trainer = pl.Trainer(
+    max_epochs=PARAMETERS['epochs'], 
+    check_val_every_n_epoch=50, 
+    logger=tb_logger,
+    deterministic=True,
+    callbacks=[checkpoint_callback],
+    gradient_clip_val=PARAMETERS['gradient_clip_value'],
+)
+
+trainer.fit(scgraphic, train_data_loader, validation_data_loader)
+```
+We save top-3 versions of scGrapHiC that maximize the performance on Stratum-Adjusted Correlation Coefficient scores as shown through the checkpoint callback code. We also do gradient clipping to ensure stable training and have set static seeds and configured deterministic training to ensure our model provides same performance on same seed across different machines configurations. Our model was trained with a single RTX 3090 GPU. 
+
+We then finally test and evaluate our model through the functions:
+
+```
+trainer.test(scgraphic, test_data_loader) 
+trainer.test(scgraphic, ood_data_loader)
+
+evaluate(os.path.join(RESULTS, PARAMETERS['experiment']), PARAMETERS)
+```
+
+
+
+## Bugs & Suggestions
+
+Please report any bugs, problems, suggestions, or requests as a [Github issue](https://github.com/rsinghlab/scGrapHiC/issues)
