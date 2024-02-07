@@ -84,6 +84,7 @@ trainer = pl.Trainer(
 )
 
 trainer.fit(scgraphic, train_data_loader, validation_data_loader)
+
 # Replace the .fit function with the lines below if you want to test on weights:
 # ckpt_path = 'path/to/scgraphic-model-weights'
 # checkpoint = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
@@ -144,12 +145,4 @@ evaluate(os.path.join(RESULTS, PARAMETERS['experiment']), PARAMETERS)
 # )
 
 # plot_loss_curves()
-
-
-
-
-
-# visualize_hic_contact_matrix(test_dataset[10]['bulk_hics'], 'visualizations/bulk.png')
-# visualize_scnrna_seq_tracks(test_dataset[10]['node_features'], 'visualizations/nf.png')
-# visualize_scnrna_seq_tracks(test_dataset[10]['positional_encodings'], 'visualizations/pe.png')
 

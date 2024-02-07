@@ -263,7 +263,7 @@ def initialize_parameters_from_args():
     parser.add_argument('--normalization_algorithm', type=str, default='library_size_normalization', 
             help='Which Hi-C normalization algorithm to use', 
             choices=['log2_norm', 'log10_norm', 'zscore_norm', 'sqrt_norm', 'library_size_normalization', 'none'])
-    parser.add_argument('--hic_smoothing', type=str2bool, default=False, help='Use Hi-C soft-threshold eigenvalue smoothing')
+    parser.add_argument('--hic_smoothing', type=str2bool, default=True, help='Use Hi-C soft-threshold eigenvalue smoothing')
     parser.add_argument('--smoothing_threshold', type=float, default=0.25, help='Soft threshold value')
     
     # Dataset creation parameters
