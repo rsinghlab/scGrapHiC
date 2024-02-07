@@ -610,10 +610,10 @@ def preprocess_hires_datasets(PARAMETERS):
         This function parses both scRNA-seq and scHi-C datasets
     '''
     # parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCRNASEQ)
-    # parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCRNASEQ, True)
+    parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCRNASEQ, True)
     
     # parse_hires_schic_datasets(MOUSE_RAW_DATA_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCHIC)
-    # parse_hires_schic_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCHIC)
+    parse_hires_schic_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCHIC)
     
     parse_bulk_datasets(PARAMETERS)
     parse_motifs_datasets(PARAMETERS)

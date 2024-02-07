@@ -108,7 +108,7 @@ def create_pseudobulk_files(path):
         cell_types, cell_names = parse_metadata(metadata)
         for i, cell_type in enumerate(cell_types):
             pseudobulk_rnaseq(tissue, cell_names[i], cell_type)
-            # pseudobulk_schic(tissue, cell_names[i], cell_type)
+            pseudobulk_schic(tissue, cell_names[i], cell_type)
             
 
     else:

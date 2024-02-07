@@ -1,9 +1,10 @@
 import os
-import torch
-import numpy as np
 
+import numpy as np
 import lightning.pytorch as pl
-from lightning.pytorch.callbacks import ModelCheckpoint
+
+from src.download_datasets import *
+
 
 from src.globals import *
 from src.model import GenomicDataset, scGrapHiC
@@ -16,16 +17,25 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from src.utils import initialize_parameters_from_args
 from src.evaluations import evaluate
 
-create_directory_structure()
 
 PARAMETERS = initialize_parameters_from_args()
-print(PARAMETERS)
-
 pl.seed_everything(PARAMETERS['seed'])
 
-# create_pseudobulk_files(HIRES_BRAIN_METADATA_FILE)
-# create_pseudobulk_files(HIRES_EMBRYO_METADATA_FILE)
-# preprocess_hires_datasets(PARAMETERS)
+print(PARAMETERS)
+
+
+# These functions download all the required datasets and setup the directory structure to contain these datasets
+create_directory_structure()
+download_hires_schic_datasets()
+download_hires_scrnaseq_datasets()
+
+
+# This function parsses the HIRES dataset and prepares it for pseudo-bulking
+preprocess_hires_datasets(PARAMETERS)
+
+# These functions then create the pseudo-bulked datasets from the HiRES datasets
+create_pseudobulk_files(HIRES_BRAIN_METADATA_FILE)
+create_pseudobulk_files(HIRES_EMBRYO_METADATA_FILE)
 
 
 # exclusion_set = ['EX15', 'brain']
@@ -97,9 +107,9 @@ pl.seed_everything(PARAMETERS['seed'])
 # create_hic_visualization_plot_for_figure4('chr11_s448_e448.npy')
 
 
-files = os.listdir(os.path.join(RESULTS, 'mesc-new', 'EX05', 'embryo', 'mix_late_mesenchyme', '391', 'generated'))
-for file in files:
-    supporting_visualizations(file)
+# files = os.listdir(os.path.join(RESULTS, 'mesc-new', 'EX05', 'embryo', 'mix_late_mesenchyme', '391', 'generated'))
+# for file in files:
+#     supporting_visualizations(file)
 
 
 # create_plot_supp_figure_1()
