@@ -4,4 +4,4 @@ Single-cell Hi-C (scHi-C) protocol helps identify cell-type-specific chromatin i
 
 [*Preprint*]() is available.
 
-![scNODE model overview]()
+![scNODE model overview](https://github.com/rsinghlab/scGrapHiC/blob/main/scgraphic_arch.png?raw=true)
