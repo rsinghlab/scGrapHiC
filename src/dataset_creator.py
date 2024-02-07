@@ -110,7 +110,7 @@ def create_schires_dataset(PARAMETERS):
 
 dataset_partitions = {
     'train': [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19],
-    'valid': [7, 11],
+    'valid': [19],
     'test':  [7, 11],
     'ood':   [7, 11],
     'debug': [1]
