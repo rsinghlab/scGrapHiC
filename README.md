@@ -91,14 +91,13 @@ We have defined an exclusion set list that allows us to control which tissue and
 
 ## Model and Baselines
 The model is implemented with Pytorch and Pytorch Geometric. We have implemented scGrapHiC in such a way that by controlling the command line parameter we can convert it into different baseline implementations. For example:
-- Bulk Only:
-- scRNA-seq Only:
-- scRNA-seq + CTCF:
-- scRNA-seq + CTCF + CpG:
-- scGrapHiC: We implement this version through default command line paramerters.
 
-These models are then trained through pytorch-lightning using the code: 
-
+- Bulk Only: We set command line parameters as --experiment bulk_only --rna_seq False --use_bulk True --positional_encodings False. Setting rna_seq False automatically ignores CTCF and CpG. 
+- scRNA-seq Only: --experiment rna_seq_only --rna_seq True, this does not include CTCF and CpG. 
+- scRNA-seq + CTCF: --experiment rna_seq_ctcf --rna_seq True --ctcf_motif True 
+- scRNA-seq + CTCF + CpG: --experiment rna_seq_ctcf_cpg --rna_seq True --ctcf_motif True --cpg_motif True
+- scGrapHiC: --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16
+  
 ```
 tb_logger = TensorBoardLogger("logs", name=PARAMETERS['experiment'])
 checkpoint_callback = ModelCheckpoint(monitor="valid/SCC",  save_top_k=3, mode='max')
@@ -126,7 +125,10 @@ trainer.test(scgraphic, ood_data_loader)
 evaluate(os.path.join(RESULTS, PARAMETERS['experiment']), PARAMETERS)
 ```
 
-
+To excute the full pipeline just run: 
+```
+python main.py --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16
+```
 
 ## Bugs & Suggestions
 
