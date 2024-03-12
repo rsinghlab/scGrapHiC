@@ -130,8 +130,8 @@ To excute the full pipeline just run:
 python main.py --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16
 ```
 
-## Setup for other model species
-We have only trained and tested scGrapHiC for Mus Musculus (mouse) datasets, and given our data availability constraints, we could not test our model on other model organisms. This section discusses acquiring and pre-processing auxiliary data such as CTCF, CpG, and bulk Hi-C for other model organisms. We show examples of Mus Musculus (mouse), Homo Sapiens (humans), and Drosophila Melanogaster (fruit fly). 
+## How to acquire the supporting files
+We have only trained and tested scGrapHiC for Mus Musculus (mouse) datasets, and given our data availability constraints, we could not test our model on other model organisms. This section discusses how we acquire and pre-process the auxiliary data such as CTCF, CpG, and bulk Hi-C for mouse and humans. Users of scGrapHiC can follow similar steps to acquire these files for other model organisms. We show examples of Mus Musculus (mouse), Homo Sapiens (humans), and Drosophila Melanogaster (fruit fly). 
 
 ### CTCF
 To generate cell agnostic CTCF motif scores we use the R package [CTCF](https://github.com/dozmorovlab/CTCF). Once you have installed the CTCF package run the code below tailored to your species of choice to generate the .bed files: 
@@ -209,6 +209,20 @@ For specific tissue specific use cases, we recommend that the users browse the [
 In case the Hi-C file is in .mcool or .cool format use the script provided by the 4DN at the [link](https://github.com/4dn-dcic/docker-4dn-hic/blob/master/README.md#run-mcool2hicsh).
 
 
+### Gene Annotation files
+scGrapHiC uses gene annotation files to reverse map the genes to their positions on the chromatin. In the table below we provide the links the gene annotation files that can be used for reverse mapping process for both mouse and humans. 
+
+
+Species -- Assembly  | Gene Annotation File (GTF)
+------------- | -------------
+Homo Sapiens -- hg19  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh37_mapping/gencode.v45lift37.basic.annotation.gtf.gz
+Homo Sapiens -- hg38  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.basic.annotation.gtf.gz
+Mus Musculus -- mm10  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M23/gencode.vM23.annotation.gtf.gz
+--------------------------
+
+Our pre-processing pipeline uses these files directly in their compressed state. 
+
+Human and Mouse Gene annotation files can be acquired from the [GENCODE](https://www.gencodegenes.org/).
 
 ### Note for other species
 The steps we have provided should work for any arbitrary species as long as they have the supporting data available on these databases. Unfortunately, our only data availability constraint is for CTCF, where the JASPAR database currently only contains motifs for Human and Mouse. We have provided alternative scGrapHiC implementations that rely on bulk Hi-C, CpG, and scRNA-seq alone; interested users are encouraged to try those implementations. In the future, we aim to test how our model performs if we provide a CTCF ChIP-seq measurement instead for species not covered under the JASPAR database. 
