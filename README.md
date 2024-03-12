@@ -163,8 +163,8 @@ subset(query_data, species == "Mus musculus" & genome == "mm10" & dataprovider =
 
 
 
-# CTCF_all <- query_data[["AH104727"]] # For mouse hg38
-# CTCF_all <- query_data[["AH104736"]] # For mouse hg19
+# CTCF_all <- query_data[["AH104727"]] # For human hg38
+# CTCF_all <- query_data[["AH104736"]] # For human hg19
 CTCF_all <- query_data[["AH104753"]] # For mouse mm10 
 
 
