@@ -131,7 +131,7 @@ python main.py --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_mot
 ```
 
 ## How to acquire the supporting files
-We have only trained and tested scGrapHiC for Mus Musculus (mouse) datasets, and given our data availability constraints, we could not test our model on other model organisms. This section discusses how we acquire and pre-process the auxiliary data such as CTCF, CpG, and bulk Hi-C for mouse and humans. Users of scGrapHiC can follow similar steps to acquire these files for other model organisms. We show examples of Mus Musculus (mouse), Homo Sapiens (humans), and Drosophila Melanogaster (fruit fly). 
+We have only trained and tested scGrapHiC for Mus Musculus (mouse) datasets, and given our data availability constraints, we could not test our model on other model organisms. This section discusses how we acquire and pre-process the auxiliary data such as CTCF, CpG, and bulk Hi-C for mouse and humans. Users of scGrapHiC can follow similar steps to acquire these files for other model organisms.
 
 ### CTCF
 To generate cell agnostic CTCF motif scores we use the R package [CTCF](https://github.com/dozmorovlab/CTCF). Once you have installed the CTCF package run the code below tailored to your species of choice to generate the .bed files: 
