@@ -20,7 +20,7 @@ pip install -r requirements.txt
 ```
 
 ## Setting up Paths
-Before we run the pipeline, we need to define four static paths in the src/globals.py file: 
+Before running the pipeline, please change the following variables in src/globals.py file: 
 - RAW_DATA: This path stores all the raw dataset files. Please ensure that the storage directory that stores this path has around 100 GB free space available. These raw datasets include HiRES scRNA-seq and scHi-C coassayed dataset, bulk Hi-C datasets, CTCF and CpG scores.  
 - PREPROCESSED_DATA: This path will contain the pseudo-bulked scRNA-seq and scHi-C datasets.
 - PROCESSED_DATA: This path will include the dataloader files we use to train and test our model. 
