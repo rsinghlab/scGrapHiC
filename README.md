@@ -25,11 +25,19 @@ We have uploaded our model weights and supplementary datasets, such as the CTCF 
 We have not uploaded Human and Fly stem cell bulks Hi-C files in this data repository because Hi-C files typically are in order of 10s of GBs. Refer to section XXX later in the README, where we provide links to both Human and Fly bulk Hi-C files. In the same section, we refer interested readers to repositories containing a wide selection of tissue-specific bulk Hi-C measurements. 
 
 ## Setting up Paths
+<<<<<<< HEAD
 Before we run the pipeline, we need to define four static paths in the src/globals.py file: 
 - DATA: This path should point to the location where you downloaded. 
 - RAW_DATA: This path stores all the raw dataset files. Set this path to point to the 'raw' sub-directory in the folder you downloaded in the previous step. Note: If you want to retrain from scratch, please ensure that the storage directory that stores this path has around 100 GB of free space available. We have provided scripts that autonomously download the HiRES and mouse bulk Hi-C datasets. 
 - PREPROCESSED_DATA: This path will contain the pseudo-bulked scRNA-seq and scHi-C datasets. Set it to point to the 'preprocessed' subdirectory in the folder you downloaded in the previous step.
 - PROCESSED_DATA: This path will include the dataloader files we use to train and test our model. Set it to point to the 'processed' subdirectory in the folder you downloaded in the previous step.
+=======
+Before running the pipeline, please change the following variables in src/globals.py file: 
+- RAW_DATA: This path stores all the raw dataset files. Please ensure that the storage directory that stores this path has around 100 GB free space available. These raw datasets include HiRES scRNA-seq and scHi-C coassayed dataset, bulk Hi-C datasets, CTCF and CpG scores.  
+- PREPROCESSED_DATA: This path will contain the pseudo-bulked scRNA-seq and scHi-C datasets.
+- PROCESSED_DATA: This path will include the dataloader files we use to train and test our model. 
+- DATA: Folder contains the path where we store weights and generated results. 
+>>>>>>> 6a0b7f87223fb1545c1b74d31d5d3cb81c2888d1
 
 ## Data
 
