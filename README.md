@@ -25,7 +25,6 @@ We have uploaded our model weights and supplementary datasets, such as the CTCF 
 We have not uploaded Human and Fly stem cell bulks Hi-C files in this data repository because Hi-C files typically are in order of 10s of GBs. Refer to section XXX later in the README, where we provide links to both Human and Fly bulk Hi-C files. In the same section, we refer interested readers to repositories containing a wide selection of tissue-specific bulk Hi-C measurements. 
 
 ## Setting up Paths
-<<<<<<< HEAD
 Before we run the pipeline, we need to define four static paths in the src/globals.py file: 
 - DATA: This path should point to the location where you downloaded. 
 - RAW_DATA: This path stores all the raw dataset files. Set this path to point to the 'raw' sub-directory in the folder you downloaded in the previous step. Note: If you want to retrain from scratch, please ensure that the storage directory that stores this path has around 100 GB of free space available. We have provided scripts that autonomously download the HiRES and mouse bulk Hi-C datasets. 
