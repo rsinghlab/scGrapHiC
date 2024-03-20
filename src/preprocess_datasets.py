@@ -542,15 +542,17 @@ def parse_motif_file(motif_file, output, PARAMETERS):
         motif_data['end'] = pd.to_numeric(motif_data["end"])
     
     elif 'cpg' == output.split('/')[-1]:
-        motif_file = os.path.join(motif_file, 'cpg_{}.txt'.format(PARAMETERS['resolution']))
         motif_data = pd.read_csv(
-            motif_file, sep='\t',
+            motif_file, sep='\t', skiprows=1,
             comment='#',
             names=[
-                'chr', 'start', 'score'
+                'chr', 'start', 'end', 
+                'length', 'num_CpG', 'score', 
+                'obs_exp_freq'
             ]
         )
-        motif_data['end'] = motif_data['start']
+        motif_data = motif_data.drop(columns=['length', 'num_CpG', 'obs_exp_freq'])
+        
         motif_data['start'] = pd.to_numeric(motif_data["start"]).astype('int')
         motif_data['end'] = pd.to_numeric(motif_data["end"]).astype('int')
         motif_data['strand'] = ['+']*len(motif_data['start'].tolist())
@@ -595,6 +597,9 @@ def parse_motifs_datasets(PARAMETERS):
     motif_files = list(map(lambda x: os.path.join(MOUSE_RAW_MOTIFS_DATA, x), os.listdir(MOUSE_RAW_MOTIFS_DATA)))
     
     for motif_file in motif_files:
+        if 'archive' in motif_file:
+            continue
+        
         motif_file_name = motif_file.split('/')[-1].split('.')[0]
         output_folder = os.path.join(MOUSE_PREPROCESSED_MOTIFS_DATA, motif_file_name)
         create_directory(output_folder)
@@ -609,7 +614,7 @@ def preprocess_hires_datasets(PARAMETERS):
     '''
         This function parses both scRNA-seq and scHi-C datasets
     '''
-    # parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCRNASEQ)
+    #parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCRNASEQ)
     parse_hires_scrnaseq_datasets(MOUSE_RAW_DATA_PSEUDO_BULK_SCRNASEQ, PARAMETERS, MOUSE_PREPROCESSED_DATA_PSEUDO_BULK_SCRNASEQ, True)
     
     # parse_hires_schic_datasets(MOUSE_RAW_DATA_SCHIC, PARAMETERS, MOUSE_PREPROCESSED_DATA_SCHIC)

@@ -348,6 +348,7 @@ def create_plots_for_figure2():
                 min_val = min(result)
         
         axs[ax_i].set_ylim(min_val, 1.3)
+        axs[ax_i].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
         axs[ax_i].yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}'))
 
         
@@ -470,6 +471,7 @@ def create_plots_for_figure3():
                 min_val = min(result)
         
         axs[ax_i].set_ylim(min_val, 1.2)
+        axs[ax_i].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
         axs[ax_i].yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}'))
 
         
@@ -566,6 +568,8 @@ def create_plots_for_figure4():
         
         axs[ax_i].set_ylabel(metric, weight='bold', fontsize=15)
         axs[ax_i].set_ylim(min(min(data))-0.1, 1.1)
+        axs[ax_i].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+
         
         x_points = [2.5, 2.5]
         y_points = [min(min(data))-0.1, 1]
@@ -878,6 +882,7 @@ def create_plot_supp_figure_1():
                 min_val = min(result)
         
         axs[ax_i].set_ylim(min_val, 1)
+        axs[ax_i].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
         axs[ax_i].yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}'))
 
         
@@ -1148,4 +1153,3 @@ def plot_loss_curves():
 
     plt.savefig('visualizations/loss_curve.png', dpi=600)
     plt.close()
-    

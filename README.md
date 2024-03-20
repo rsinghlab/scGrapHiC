@@ -19,12 +19,17 @@ Then install all the required packages, run the command:
 pip install -r requirements.txt
 ```
 
+## Downloading the supplementary datasets and model weights
+We have uploaded our model weights and supplementary datasets, such as the CTCF and CpG scores, Gene annotation files, and chrom sizes in this [data](https://drive.google.com/drive/folders/1Bo7sq2TlgVZRU6c6JB4MFAT2LZSz0SEm?usp=sharing) folder. Please download this folder before you proceed with the rest of the installation. While we train and test scGrapHiC on mouse datasets only, we provide these supplementary files for Human (hg38) and Fly (dm6) to aid users who work with these model organisms. We also provide training, testing, and held-out cell-type dataloaders in the processed directory to make it easy to replicate the results in our manuscript. 
+
+We have not uploaded Human and Fly stem cell bulks Hi-C files in this data repository because Hi-C files typically are in order of 10s of GBs. Refer to section XXX later in the README, where we provide links to both Human and Fly bulk Hi-C files. In the same section, we refer interested readers to repositories containing a wide selection of tissue-specific bulk Hi-C measurements. 
+
 ## Setting up Paths
 Before we run the pipeline, we need to define four static paths in the src/globals.py file: 
-- RAW_DATA: This path stores all the raw dataset files. Please ensure that the storage directory that stores this path has around 100 GB free space available. These raw datasets include HiRES scRNA-seq and scHi-C coassayed dataset, bulk Hi-C datasets, CTCF and CpG scores.  
-- PREPROCESSED_DATA: This path will contain the pseudo-bulked scRNA-seq and scHi-C datasets.
-- PROCESSED_DATA: This path will include the dataloader files we use to train and test our model. 
-- DATA: Folder contains the path where we store weights and generated results. 
+- DATA: This path should point to the location where you downloaded. 
+- RAW_DATA: This path stores all the raw dataset files. Set this path to point to the 'raw' sub-directory in the folder you downloaded in the previous step. Note: If you want to retrain from scratch, please ensure that the storage directory that stores this path has around 100 GB of free space available. We have provided scripts that autonomously download the HiRES and mouse bulk Hi-C datasets. 
+- PREPROCESSED_DATA: This path will contain the pseudo-bulked scRNA-seq and scHi-C datasets. Set it to point to the 'preprocessed' subdirectory in the folder you downloaded in the previous step.
+- PROCESSED_DATA: This path will include the dataloader files we use to train and test our model. Set it to point to the 'processed' subdirectory in the folder you downloaded in the previous step.
 
 ## Data
 
@@ -98,6 +103,8 @@ The model is implemented with Pytorch and Pytorch Geometric. We have implemented
 - scRNA-seq + CTCF + CpG: --experiment rna_seq_ctcf_cpg --rna_seq True --ctcf_motif True --cpg_motif True
 - scGrapHiC: --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16
   
+We have provided weights for all these versions in the [data](https://drive.google.com/drive/folders/1Bo7sq2TlgVZRU6c6JB4MFAT2LZSz0SEm?usp=sharing). 
+
 ```
 tb_logger = TensorBoardLogger("logs", name=PARAMETERS['experiment'])
 checkpoint_callback = ModelCheckpoint(monitor="valid/SCC",  save_top_k=3, mode='max')
@@ -130,10 +137,50 @@ To excute the full pipeline just run:
 python main.py --experiment scgraphic --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16
 ```
 
-## How to acquire the supporting files
-We have only trained and tested scGrapHiC for Mus Musculus (mouse) datasets, and given our data availability constraints, we could not test our model on other model organisms. This section discusses how we acquire and pre-process the auxiliary data such as CTCF, CpG, and bulk Hi-C for mouse and humans. Users of scGrapHiC can follow similar steps to acquire these files for other model organisms.
 
-### CTCF
+
+# Inference only
+
+If you are not interested in training scGrapHiC from scratch and are interested in only working with the trained model, we have provided another python file 'inference.py' that facilitates that. 'inference.py' follows very similar routines to 'main.py' with an exception of running the entire downloading, preprocessing and dataloader creation pipeline. It assumes that the dataloaders are already in the PROCESSED_DATA directory. 
+
+To run the inference pipeline with the provided dataloaders and the weights: 
+
+```
+python inference.py --experiment scGrapHiC --rna_seq True --ctcf_motif True --cpg_motif True --use_bulk True --positional_encodings True --pos_encodings_dim 16 --bulk_hic mesc --hic_smoothing True
+```
+
+This should create a new folder in the results directory with the experiment name scGrapHiC which should contain all the generated data for both the testing and held out cell types. 
+
+## Bulk Hi-C for Humans and Flies
+While we have only trained and tested scGrapHiC on Mouse (Mus Musculus) datasets, we believe that scGrapHiC can potentially generalize to scRNA-seq datasets from other model organisms. Below, we provide a table with links to embryonic stem cell bulk Hi-C datasets for Humans and Fly. 
+
+### Embryonic Stem Cell bulk Hi-C for other model organisms
+Species      | Cell Line |    Dataset link
+-------------|-----------|-------------
+Human (hg38) |  mESC     | https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/9681f9b5-335a-4f56-afa1-15b58bbb41e8/4DNFI5IAH9H1.hic
+Human (hg38) |  H1-hESC  | https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/bb3307fd-7162-477a-87c5-52f12d03befc/4DNFID162B9J.hic
+Fly (dm6)    |     S2    | https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSM3753419&format=file&file=GSM3753419%5FS2%5FInSitu%5FHS%5F1%5Finter%5F30%2Ehic
+
+
+Once you have downloaded them place them in the "data/raw/your_species/bulk" folder. 
+
+scGrapHiC relies on the bulk Hi-C data to be in the .hic format, but sometimes the available Hi-C data is in .cool format or is in raw FASTQ reads format. To convert .cool (or .mcool) format to .hic you can rely on the [cool2hic](https://github.com/4dn-dcic/docker-4dn-hic/blob/master/README.md#run-mcool2hicsh) conversion scripts provided by 4DN. To process the raw FASTQ reads you can refer to the [Juicer](https://github.com/aidenlab/juicer) pipeline that generates the .hic files from the raw FASTQ reads. 
+
+### Where to acquire tissue specific bulk Hi-C measurements?
+As part of our evaluations we have shown that scGrapHiC can adapt to tissue specific bulk Hi-C reads to boost its predictive capacity significantly. Tissue Hi-C measurements are typically closed source and are usually challenging to acquire. However, there are a few data repositories shown in the table below an interested user can browse to find a bulk Hi-C measurement relevant for their analysis. 
+
+Data Repository | Link
+-------------   | -------------
+Geo Accession   | https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi
+4DN             | https://data.4dnucleome.org/
+ENOCDE          | https://www.encodeproject.org/matrix/?type=Experiment&control_type!=*&status=released&perturbed=false
+
+Please feel free to reach out if you need assitance in finding relevant datasets! 
+
+## For other model organisms
+We need a total of five supplementary files for scGrapHiC to work for other model organisms. We will go over them one by one explain how to acquire or generate them. 
+
+### CTCF 
 To generate cell agnostic CTCF motif scores we use the R package [CTCF](https://github.com/dozmorovlab/CTCF). Once you have installed the CTCF package run the code below tailored to your species of choice to generate the .bed files: 
 
 ```
@@ -175,59 +222,34 @@ write.table(CTCF_all %>% sort() %>% as.data.frame(), file = "ctcf.bed", sep = "\
 
 ```
 
-Running this script with save a file with name 'ctcf.bed' that our pre-processing pipeline utilizes to generate both positive and negative strand CTCF motif score node features. 
+Running this script with save a file with name 'ctcf.bed' that our pre-processing pipeline utilizes to generate both positive and negative strand CTCF motif score node features. Note: you might have to explore other data repositories besides JASPAR to acquire specific CTCF motif scores. 
 
 ### CpG
-We rely on [pycoMeth](https://a-slide.github.io/pycoMeth) toolkit to generate CG frequency scores for CpG island across the entire genome that we use an auxiliary node feature. pycoMeth requires the reference genome file to generate a genome wide CG frequency scores. We acquire the reference genomes from the [UCSC Genome browser](https://genome.ucsc.edu/cgi-bin/hgGateway?hgsid=2016303202_Qa6m064otsaJjzaDpZnm3ifnqD0s). For ease of access, we provide links to the reference genomes of three popular model species:
 
-- Homo Sapien [(hg38)](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz), [(hg19)](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz) 
-- Mus Musculus [(mm10)](https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/mm10.fa.gz)
+We rely on [pycoMeth](https://a-slide.github.io/pycoMeth) toolkit to generate CG frequency scores for CpG island across the entire genome that we use an auxiliary node feature. pycoMeth requires the reference genome file to generate a genome wide CG frequency scores. We acquire the reference genomes from the [UCSC Genome browser](https://genome.ucsc.edu/cgi-bin/hgGateway?hgsid=2016303202_Qa6m064otsaJjzaDpZnm3ifnqD0s). 
 
-Once you have downloaded this reference file and also have installed the pycoMeth toolkil, just run the following command to generate the genome wide CG frequency scores file: 
+Once you have downloaded this reference file for your species of interest and also have installed the pycoMeth toolkil, just run the following command to generate the genome wide CG frequency scores file: 
 
 ```
 pycoMeth CGI_Finder -f path/to/your/uncompressed_reference/file.fa -b cpg.bed -t cpg.tsv --progress
 ```
 
+scGrapHiC takes in the cpg.tsv file to create additional node features. 
+
 ### Bulk Hi-C
 
-We acquired our bulk Hi-C files from the 4DN and the ENCODE portal. As shown in our evaluation for most deconvolution tasks, a embryonic stem cell bulk Hi-C measurements is enough. In the table below we provide links to 
-
-Species -- Assembly  | Embryonic Stem Cells (ESC) bulk Hi-C datasets
-------------- | -------------
-Homo Sapiens -- hg19  | https://data.4dnucleome.org/experiment-set-replicates/4DNESFSCP5L8/#raw-files
-Homo Sapiens -- hg38  | https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/bb3307fd-7162-477a-87c5-52f12d03befc/4DNFID162B9J.hic
-Mus Musculus -- mm10  | https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/9681f9b5-335a-4f56-afa1-15b58bbb41e8/4DNFI5IAH9H1.hic
---------------------------
-
-Note that for hg19 assembly we only have raw FASTQ files available, and to generate .hic files we have to run the Juicer pipeline with hg19 assembly and parameters. Refer to [Juicer](https://github.com/aidenlab/juicer) for more details. 
-
-
-For specific tissue specific use cases, we recommend that the users browse the [ENCODE](https://www.encodeproject.org/matrix/?type=Experiment&assay_title=intact+Hi-C&assay_title=in+situ+Hi-C&assay_title=dilution+Hi-C) and [4DN](https://data.4dnucleome.org/) portal to acquire a bulk Hi-C for the tissue they have sequenced using their single-cell RNA-seq protocol. 
-
-
-In case the Hi-C file is in .mcool or .cool format use the script provided by the 4DN at the [link](https://github.com/4dn-dcic/docker-4dn-hic/blob/master/README.md#run-mcool2hicsh).
-
+Best source to acquire bulk Hi-C measurements are the ENCODE and the 4DN portals. However, we would also recommend the users to explore specie specific databanks such as [Flybase](https://flybase.org/) for Drosophilla family species. 
 
 ### Gene Annotation files
-scGrapHiC uses gene annotation files to reverse map the genes to their positions on the chromatin. In the table below we provide the links the gene annotation files that can be used for reverse mapping process for both mouse and humans. 
+We need the gene annotation files to reverse map the observed expression back onto their genomic loci. We acquire our gene annotation files from the [GENCODE](https://www.gencodegenes.org/) portal. There are other repositories such as [UCSC browser](https://genome.ucsc.edu/cgi-bin/hgGateway?hgsid=2040118178_Ie1H0irVCicwcBQFXWfpDkARAAhZ). 
 
 
-Species -- Assembly  | Gene Annotation File (GTF)
-------------- | -------------
-Homo Sapiens -- hg19  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh37_mapping/gencode.v45lift37.basic.annotation.gtf.gz
-Homo Sapiens -- hg38  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.basic.annotation.gtf.gz
-Mus Musculus -- mm10  | https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M23/gencode.vM23.annotation.gtf.gz
---------------------------
+### Chrom sizes
+You can use this script provided by the [UCSC Genome Browser repository](https://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/fetchChromSizes) to download chromsizes file for any species by running the command to fetch chromsizes for humans: 
 
-Our pre-processing pipeline uses these files directly in their compressed state. 
-
-Human and Mouse Gene annotation files can be acquired from the [GENCODE](https://www.gencodegenes.org/).
-
-### Note for other species
-The steps we have provided should work for any arbitrary species as long as they have the supporting data available on these databases. Unfortunately, our only data availability constraint is for CTCF, where the JASPAR database currently only contains motifs for Human and Mouse. We have provided alternative scGrapHiC implementations that rely on bulk Hi-C, CpG, and scRNA-seq alone; interested users are encouraged to try those implementations. In the future, we aim to test how our model performs if we provide a CTCF ChIP-seq measurement instead for species not covered under the JASPAR database. 
-
-Please feel free to reach out to us if you have an problems processing these datasets. 
+```
+fetchChromSizes hg38 > hg38.chrom.sizes
+```
 
 ## Bugs & Suggestions
 

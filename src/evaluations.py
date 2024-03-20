@@ -394,7 +394,7 @@ def run_all_evaluation(generated, targets, root, storage, PARAMETERS):
                     kendall_tau(g, t)
                 )
             )
-
+            
             print(tissue, stage, cell_line, cell_counts, chromosome, region_x, region_y, ssim(g, t), genome_disco(g, t), SCC(g, t), f1_score)
 
 

@@ -250,7 +250,7 @@ def initialize_parameters_from_args():
     parser = argparse.ArgumentParser(description='Initialize parameters from command line arguments')
     
     # Experiment parameters
-    parser.add_argument('--experiment', type=str, default='testing', help='Experiment name')
+    parser.add_argument('--experiment', type=str, default='scGrapHiC', help='Experiment name')
     
     # Dataset parameters
     parser.add_argument('--resolution', type=int, default=50000, help='Resolution')

@@ -85,64 +85,8 @@ trainer = pl.Trainer(
 
 trainer.fit(scgraphic, train_data_loader, validation_data_loader)
 
-# Replace the .fit function with the lines below if you want to test on weights:
-# ckpt_path = 'path/to/scgraphic-model-weights'
-# checkpoint = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
-# scgraphic.load_state_dict(checkpoint['state_dict'])
-
 trainer.test(scgraphic, test_data_loader) 
 trainer.test(scgraphic, ood_data_loader)
 
 
-evaluate(os.path.join(RESULTS, PARAMETERS['experiment']), PARAMETERS)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-################################################################################################################################################################################################################
-
-
-# create_plots_for_figure2()
-# create_plots_for_figure3()
-# create_plots_for_figure4()
-# create_hic_visualization_plot_for_figure2()
-# create_hic_visualization_plot_for_figure3()
-# create_hic_visualization_plot_for_figure4('chr11_s448_e448.npy')
-
-
-# files = os.listdir(os.path.join(RESULTS, 'mesc-new', 'EX05', 'embryo', 'mix_late_mesenchyme', '391', 'generated'))
-# for file in files:
-#     supporting_visualizations(file)
-
-
-# create_plot_supp_figure_1()
-# create_plot_supp_figure_2()
-
-
-# plot_num_cell_to_performance_scatter_plot(
-#     os.path.join(RESULTS, 'testing', 'results.csv'),
-#     'GD',
-#     'GD_cuttoff_results.png'
-# )
-# plot_num_cell_to_performance_scatter_plot(
-#     os.path.join(RESULTS, 'testing', 'results.csv'),
-#     'SCC',
-#     'SCC_cuttoff_results.png'
-# )
-
-# plot_loss_curves()
-
+# evaluate(os.path.join(RESULTS, PARAMETERS['experiment']), PARAMETERS)
