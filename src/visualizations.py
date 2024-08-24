@@ -39,7 +39,8 @@ def visualize_read_distribution_plot(data, output_path):
 
 
 def visualize_scnrna_seq_tracks(data, output_file):
-    if data.shape[-1] > 1:
+    
+    if len(data.shape) >= 2 and data.shape[-1] > 1:
         fig, axs = plt.subplots(data.shape[-1])
         X = np.array(range(data.shape[0]))
         
@@ -270,7 +271,7 @@ def create_plots_for_figure2():
     metrics = ['GD', 'SCC', 'TAD_sim']
     
     result_files = [
-        os.path.join(RESULTS, 'bulk_only', 'full_results.csv'),
+        # os.path.join(RESULTS, 'bulk_only', 'full_results.csv'),
         os.path.join(RESULTS, 'rna_seq_only', 'full_results.csv'),
         os.path.join(RESULTS, 'rna_seq_ctcf', 'full_results.csv'),
         os.path.join(RESULTS, 'rna_seq_ctcf_cpg', 'full_results.csv'),
@@ -278,21 +279,21 @@ def create_plots_for_figure2():
     ]
     
     results_titles = [
-        'Bulk',
+        # 'Bulk',
         'scRNA-seq',
         'scRNA-seq\n+CTCF',
         'scRNA-seq\n+CTCF+CpG',
         'scGrapHiC'
     ]
     colors = [
-        '#D81B60',
+        # '#D81B60',
         '#AFA26F',
         '#FFC107',
         '#004D40',
         '#6BBDE7'
     ]
     
-    fig, axs = plt.subplots(len(metrics), sharex=True, figsize=(9, 10))
+    fig, axs = plt.subplots(len(metrics), figsize=(2*len(colors), 12))
     
     print(len(axs))
     
@@ -321,8 +322,8 @@ def create_plots_for_figure2():
             y_pos_for_the_anotate = 0.85 + i*0.075
             arrow = FancyArrowPatch((positions[i-1]-0.025, y_pos_for_the_anotate), (positions[i]+0.025, y_pos_for_the_anotate), **arrow_params)
             
-            axs[ax_i].text((positions[i-1] + positions[i])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
-            axs[ax_i].add_patch(arrow)
+            # axs[ax_i].text((positions[i-1] + positions[i])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
+            # axs[ax_i].add_patch(arrow)
             
         
         p_values = ['-'] + p_values
@@ -347,16 +348,20 @@ def create_plots_for_figure2():
             if min(result) < min_val:
                 min_val = min(result)
         
-        axs[ax_i].set_ylim(min_val, 1.3)
+        axs[ax_i].set_ylim(min_val, 1.1)
         axs[ax_i].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
         axs[ax_i].yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}'))
 
         
+        
+        
+        
+        
         axs[ax_i].set_xticks(positions)
-        if metric == 'TAD_sim':
+        if metric == 'GD':
             axs[ax_i].set_xticklabels(results_titles, rotation=0,  weight='bold', fontsize=15)
         else:
-            axs[ax_i].set_xticklabels([' ', ' ', ' ', ' ', ' '], rotation=0,  weight='bold', fontsize=15)
+            axs[ax_i].set_xticklabels(results_titles, rotation=0,  weight='bold', fontsize=15)
         
         # Adding a border around the plot
         axs[ax_i].spines['top'].set_bounds(False)
@@ -364,8 +369,15 @@ def create_plots_for_figure2():
         axs[ax_i].spines['bottom'].set_color('#CCCCCC')
         axs[ax_i].spines['left'].set_color('#CCCCCC')
 
-        
-    plt.savefig('visualizations/fig2.png', bbox_inches='tight', dpi=600)
+    # We need to add lines corresponding to biological maxima TAD_sim = 0.88, GD = 0.94, SCC = 0.79
+    background_positions = [0.6, len(results)+0.25]
+    
+    axs[0].plot(background_positions, [0.94]*len(background_positions), linestyle='dashed', color='black', alpha=0.75)
+    axs[1].plot(background_positions, [0.84]*len(background_positions), linestyle='dashed', color='black', alpha=0.75)
+    axs[2].plot(background_positions, [0.96]*len(background_positions), linestyle='dashed', color='black', alpha=0.75)   
+    
+    
+    plt.savefig('visualizations/attempt_4_fig2.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
 
 
@@ -414,7 +426,7 @@ def create_plots_for_figure3():
         '#6BBDE7'
     ]
     
-    fig, axs = plt.subplots(len(metrics), sharex=True, figsize=(9, 10))
+    fig, axs = plt.subplots(len(metrics), sharex=True, figsize=(9, 12))
     
     print(len(axs))
     
@@ -442,8 +454,8 @@ def create_plots_for_figure3():
             y_pos_for_the_anotate = 0.85 + i*0.075
             arrow = FancyArrowPatch((positions[i-1]-0.025, y_pos_for_the_anotate), (positions[i]+0.025, y_pos_for_the_anotate), **arrow_params)
             
-            axs[ax_i].text((positions[i-1] + positions[i])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
-            axs[ax_i].add_patch(arrow)
+            # axs[ax_i].text((positions[i-1] + positions[i])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
+            # axs[ax_i].add_patch(arrow)
         
         p_values = ['-'] + p_values
         
@@ -479,7 +491,7 @@ def create_plots_for_figure3():
         if metric == 'TAD_sim':
             axs[ax_i].set_xticklabels(results_titles, rotation=0,  weight='bold', fontsize=15)
         else:
-            axs[ax_i].set_xticklabels([' ']*len(results_titles), rotation=0,  weight='bold', fontsize=15)
+            axs[ax_i].set_xticklabels(results_titles, rotation=0,  weight='bold', fontsize=15)
         
         # Adding a border around the plot
         axs[ax_i].spines['top'].set_bounds(False)
@@ -487,8 +499,14 @@ def create_plots_for_figure3():
         axs[ax_i].spines['bottom'].set_color('#CCCCCC')
         axs[ax_i].spines['left'].set_color('#CCCCCC')
 
+    # We need to add lines corresponding to biological maxima TAD_sim = 0.88, GD = 0.94, SCC = 0.79
+    background_positions = [0.6, len(results)+0.25]
+    
+    axs[0].plot(background_positions, [0.94]*len(background_positions), linestyle='dashed', color='black', alpha=0.75)
+    axs[1].plot(background_positions, [0.84]*len(background_positions), linestyle='dashed', color='black', alpha=0.75)
+    axs[2].plot(background_positions, [0.96]*len(background_positions), linestyle='dashed', color='black', alpha=0.75) 
         
-    plt.savefig('visualizations/fig3.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/fig3.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
 
 
@@ -613,8 +631,8 @@ def create_plots_for_figure4():
         
         arrow = FancyArrowPatch((positions[-2], y_pos_for_the_anotate), (positions[-1], y_pos_for_the_anotate), **arrow_params)
         
-        axs[ax_i].text((positions[-2] + positions[-1])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
-        axs[ax_i].add_patch(arrow)
+        # axs[ax_i].text((positions[-2] + positions[-1])/2, y_pos_for_the_anotate+0.005, stars, ha='center', va='bottom', color='black', fontsize=12)
+        # axs[ax_i].add_patch(arrow)
         
         # Adding a border around the plot
         axs[ax_i].spines['top'].set_bounds(False)
@@ -622,7 +640,7 @@ def create_plots_for_figure4():
         axs[ax_i].spines['bottom'].set_color('#CCCCCC')
         axs[ax_i].spines['left'].set_color('#CCCCCC')
         
-    plt.savefig('visualizations/fig4.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/fig4.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
     
         
@@ -668,7 +686,7 @@ def create_hic_visualization_plot_for_figure2():
         axs[i].add_patch(rect_1)
 
             
-    plt.savefig('visualizations/fig2_hic_visualizations.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/fig2_hic_visualizations.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
     
     
@@ -713,7 +731,7 @@ def create_hic_visualization_plot_for_figure3():
         axs[i].add_patch(rect_1)
 
             
-    plt.savefig('visualizations/fig3_hic_visualizations.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/fig3_hic_visualizations.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
     
 
@@ -735,35 +753,36 @@ def create_hic_visualization_plot_for_figure4(file):
     ]
     
     
-    fig, axs = plt.subplots(2, 4,  sharey=True, figsize=(7, 4), gridspec_kw = {'wspace':0, 'hspace':0})
-    rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
-    rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
+    fig, axs = plt.subplots(4, 2,  sharey=True, figsize=(2, 3), gridspec_kw = {'wspace':0, 'hspace':0})
+    
     
     
     axs[0, 0].matshow(np.load(result_files[0]), cmap=REDMAP)
     axs[0, 0].axis('off')
-    axs[0, 0].text(64, -3, 'Mix Late\nMesenchyme', ha='center', va='bottom', weight='bold', color='black', fontsize=7)
+    axs[0, 0].text(-13, 95, 'Mix Late\nMesenchyme', ha='center', va='bottom', weight='bold', color='black', fontsize=4, rotation=90)
+    rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     axs[0, 0].add_patch(rect)
+    rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
     axs[0, 0].add_patch(rect_1)
-    axs[0, 0].text(-5, 80, 'Generated', ha='center', va='bottom', weight='bold', color='black', rotation=90, fontsize=7)
+    axs[0, 0].text(64, -3, 'Generated', ha='center', va='bottom', weight='bold', color='black', fontsize=4)
     
-    axs[1, 0].matshow(np.load(result_files[1]), cmap=REDMAP)
+    axs[0, 1].matshow(np.load(result_files[1]), cmap=REDMAP)
+    axs[0, 1].axis('off')
+    rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
+    axs[0, 1].add_patch(rect)
+    rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
+    axs[0, 1].add_patch(rect_1)
+    axs[0, 1].text(64, -3, 'Target', ha='center', va='bottom', weight='bold', color='black', fontsize=4)
+    
+    
+    
+    axs[1, 0].matshow(np.load(result_files[2]), cmap=REDMAP)
     axs[1, 0].axis('off')
+    axs[1, 0].text(-13, 95, 'Early\nNeurons', ha='center', va='bottom', weight='bold', color='black', rotation=90,  fontsize=4)
     rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
     axs[1, 0].add_patch(rect)
     axs[1, 0].add_patch(rect_1)
-    axs[1, 0].text(-5, 80, 'Target', ha='center', va='bottom', weight='bold', color='black', rotation=90, fontsize=7)
-    
-    
-    
-    axs[0, 1].matshow(np.load(result_files[2]), cmap=REDMAP)
-    axs[0, 1].axis('off')
-    axs[0, 1].text(64, -3, 'Early\nNeurons', ha='center', va='bottom', weight='bold', color='black', fontsize=7)
-    rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
-    rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
-    axs[0, 1].add_patch(rect)
-    axs[0, 1].add_patch(rect_1)
     
     axs[1, 1].matshow(np.load(result_files[3]), cmap=REDMAP)
     axs[1, 1].axis('off')
@@ -773,38 +792,38 @@ def create_hic_visualization_plot_for_figure4(file):
     axs[1, 1].add_patch(rect_1)
     
     
-    axs[0, 2].matshow(np.load(result_files[4]), cmap=REDMAP)
-    axs[0, 2].axis('off')
-    axs[0, 2].text(64, -3, 'Ex1\n(mESC prior)', ha='center', va='bottom', weight='bold', color='black', fontsize=7)
+    axs[2, 0].matshow(np.load(result_files[4]), cmap=REDMAP)
+    axs[2, 0].axis('off')
+    axs[2, 0].text(-13, 95, 'Ex1\n(mESC prior)', ha='center', va='bottom', weight='bold', color='black', rotation=90, fontsize=4)
     rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
-    axs[0, 2].add_patch(rect)
-    axs[0, 2].add_patch(rect_1)
+    axs[2, 0].add_patch(rect)
+    axs[2, 0].add_patch(rect_1)
     
-    axs[1, 2].matshow(np.load(result_files[5]), cmap=REDMAP)
-    axs[1, 2].axis('off')
+    axs[2, 1].matshow(np.load(result_files[5]), cmap=REDMAP)
+    axs[2, 1].axis('off')
     rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
-    axs[1, 2].add_patch(rect)
-    axs[1, 2].add_patch(rect_1)
+    axs[2, 1].add_patch(rect)
+    axs[2, 1].add_patch(rect_1)
     
-    axs[0, 3].matshow(np.load(result_files[6]), cmap=REDMAP)
-    axs[0, 3].axis('off')
-    axs[0, 3].text(64, -3, 'Ex1\n(cortex prior)', ha='center', va='bottom', weight='bold', color='black', fontsize=7)
+    axs[3, 0].matshow(np.load(result_files[6]), cmap=REDMAP)
+    axs[3, 0].axis('off')
+    axs[3, 0].text(-13, 95, 'Ex1\n(cortex prior)', ha='center', va='bottom', weight='bold', rotation=90, color='black', fontsize=4)
     rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
-    axs[0, 3].add_patch(rect)
-    axs[0, 3].add_patch(rect_1)
+    axs[3, 0].add_patch(rect)
+    axs[3, 0].add_patch(rect_1)
     
-    axs[1, 3].matshow(np.load(result_files[7]), cmap=REDMAP)
-    axs[1, 3].axis('off')
+    axs[3, 1].matshow(np.load(result_files[7]), cmap=REDMAP)
+    axs[3, 1].axis('off')
     rect = plt.Rectangle((-0.5, -0.5), np.load(result_files[0]).shape[1], np.load(result_files[0]).shape[0], linewidth=1, edgecolor='black', facecolor='none')
     rect_1 = plt.Rectangle((57, 57), 30, 30, linewidth=0.675, edgecolor='blue', facecolor='none')
-    axs[1, 3].add_patch(rect)
-    axs[1, 3].add_patch(rect_1)
+    axs[3, 1].add_patch(rect)
+    axs[3, 1].add_patch(rect_1)
     
     plt.tight_layout()
-    plt.savefig('visualizations/{}.png'.format(file), bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/{}.pdf'.format(file), format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
 
 
@@ -899,20 +918,8 @@ def create_plot_supp_figure_1():
         axs[ax_i].spines['left'].set_color('#CCCCCC')
 
         
-    plt.savefig('visualizations/supp_fig_1.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/supp_fig_1.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1004,7 +1011,7 @@ def create_plot_supp_figure_2():
         axs[ax_i].spines['left'].set_color('#CCCCCC')
 
         
-    plt.savefig('visualizations/supp_fig_2.png', bbox_inches='tight', dpi=600)
+    plt.savefig('visualizations/supp_fig_2.pdf', format='pdf', bbox_inches='tight', dpi=600)
     plt.close()
 
 
@@ -1151,5 +1158,5 @@ def plot_loss_curves():
     plt.ylabel('MSE Loss', weight='bold', )
     plt.xlabel('Batch ID (Across all Epochs)', weight='bold', )
 
-    plt.savefig('visualizations/loss_curve.png', dpi=600)
+    plt.savefig('visualizations/loss_curve.pdf', format='pdf', dpi=600)
     plt.close()

@@ -184,19 +184,15 @@ def get_node_features(encoding):
 
 def get_edge_attrs(matrix):
     edge_indices = torch.nonzero(matrix)
-    print(matrix.shape)
-        
     edge_features = matrix[edge_indices]
     edge_features = edge_features.reshape(-1, 1)
-    print(edge_features.shape)
-
+    
     return edge_features.to(torch.float)
 
 def get_edge_indexes(matrix):
     edge_indices = torch.nonzero(matrix)
     edge_indices = edge_indices.t().to(torch.long).view(2, -1)
-    print(edge_indices.shape)
-
+    
     return edge_indices
 
 
@@ -241,7 +237,8 @@ def add_dataset(stage, tissue, cell_type):
 
 
 
-
+def read_npy_file(filepath):
+    return np.load(filepath)
 
 
 

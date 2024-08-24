@@ -1,0 +1,16 @@
+{
+    "structured": true,
+    "header_included": true, 
+    "config_name":"testing",
+    "resolution": 1000000,
+    "dimensions": 128,
+    "resolution_cell": 1000000,
+    "resolution_fh": [1000000],
+    "input_format": "higashi_v2",
+    "contact_header": ["chr1",	"pos1",	"chr2", "pos2"],
+    "data_dir": "/users/gmurtaza/data/gmurtaza/scGrapHiC/higashi/",
+    "temp_dir": "/users/gmurtaza/data/gmurtaza/scGrapHiC/higashi/",
+    "cytoband_path": "/users/gmurtaza/data/gmurtaza/scGrapHiC/raw/mm10/cytoBand.txt",
+    "genome_reference_path": "/users/gmurtaza/data/gmurtaza/scGrapHiC/raw/mm10/chrom.sizes",
+    "chrom_list": ["chr1"]
+}

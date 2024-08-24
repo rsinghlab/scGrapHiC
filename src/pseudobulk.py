@@ -83,7 +83,7 @@ def parse_metadata(metadata):
         try:
             cell_name = metadata[(metadata['Celltype'] == cell_type)]['Cellname'].tolist()
         except KeyError:
-             cell_name = metadata[(metadata['Cell type'] == cell_type)]['Cellname'].tolist()
+            cell_name = metadata[(metadata['Cell type'] == cell_type)]['Cellname'].tolist()
         
         cell_names.append(cell_name)
     

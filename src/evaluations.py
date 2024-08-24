@@ -10,10 +10,9 @@ import scipy.stats as stats
 from sklearn import metrics
 from scipy.sparse import csr_matrix
 from scipy.stats import pearsonr, spearmanr
-from src.compartments import compartment
 from skimage.metrics import structural_similarity
 
-from src.TADs import tad_sim, insulation_correlation
+from src.TADs import tad_sim
 from src.utils import create_directory
 from src.visualizations import visualize_hic_contact_matrix
 
@@ -34,13 +33,7 @@ def mse(A:np.ndarray, B:np.ndarray):
     Returns:
         a scalar representing the MSE
     """
-    if (len(A.shape) != 2) and (len(B.shape) != 2):
-        raise ValueError("both input matrices are of the wrong shape")
-    elif len(A.shape) != 2:
-        raise ValueError("first input matrix is of the wrong shape (" + str(len(A.shape)) + " dimensions instead of 2)")
-    elif len(B.shape) != 2:
-        raise ValueError("second input matrix is of the wrong shape (" + str(len(B.shape)) + " dimensions instead of 2)")
-    elif A.shape != B.shape:
+    if A.shape != B.shape:
         raise KeyError("matrices not of the same size")
     
     mse = np.square(np.subtract(A, B)).mean()
@@ -153,7 +146,6 @@ def SCC(A:np.ndarray, B:np.ndarray, max_bins:int=40, correlation_method:str='PCC
         scc : float
             Stratum adjusted correlation coefficient.
     """
-    
     if (len(A.shape) != 2) and (len(B.shape) != 2):
         raise ValueError("both input matrices are of the wrong shape")
     elif len(A.shape) != 2:
@@ -278,34 +270,6 @@ def genome_disco(m1, m2, transition=True, tmax=3, tmin=3):
 
     return reproducibility
 
-
-
-
-############################################################ Downstream Evaluation Metrics ######################################################################
-def AB_compartment_similarity(A:np.ndarray, B:np.ndarray):
-    """
-        Here we evaluate the similarity between the A/B compartment profiles betweem matrix A and matrix B
-        Args:
-            A (np.ndarray): a 2-dimensional numpy array representing a scHi-C contact matrix
-            B (np.ndarray): a 2-dimensional numpy array representing a scHi-C contact matrix
-
-        Returns:
-            Correlation between the A/B compartment profiles of the provided matrices
-    """
-    
-    pc1 = compartment(A).reshape((-1))
-    pc2 = compartment(B).reshape((-1))
-    
-    ab_comps_1 = np.sign(pc1)
-    ab_comps_2 = np.sign(pc2)
-    
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore"
-        )
-        s = pearsonr(ab_comps_1, ab_comps_2)[0]
-    
-    return s
 
 
 

@@ -112,7 +112,7 @@ def _insulationScore(m, windowsize=500000, res=40000):
 def insulation_score(m, resolution):
     # We compute the insulation vector at three scales
     
-    scales = [5, 10, 25] # Even numbers because the smoothing wont work 
+    scales = [5, 10, 25] 
     
     tracks = np.zeros((m.shape[0], len(scales)))
     

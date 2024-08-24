@@ -15,8 +15,6 @@ from src.globals import *
 from anndata import AnnData
 from multiprocessing import Process
 from scipy.sparse import csr_matrix
-from src.compartments import ABcompartment_from_mat
-from src.TADs import insulation_score
 from src.visualizations import visualize_hic_contact_matrix, visualize_scnrna_seq_tracks
 
 

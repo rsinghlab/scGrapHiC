@@ -1,18 +1,31 @@
-"""
-Compartment level analysis and plot funcitons
-@author zliu
-@data 20210902
-"""
-#global dependence
+import warnings
+
 import numpy as np
 import pandas as pd
 
-from src.globals import *
 from sklearn.decomposition import PCA
 
 
 
-# Decay profile
+try:
+	from scipy.stats import PearsonRConstantInputWarning, SpearmanRConstantInputWarning
+except:
+	from scipy.stats import ConstantInputWarning as PearsonRConstantInputWarning
+
+########################################## NULL extractor ########################################################
+
+def null_extractor(mat):
+    return mat
+
+
+
+########################################### A/B compartments ######################################################
+'''
+Compartment level analysis and plot funcitons
+@author zliu
+@data 20210902
+'''
+
 # for p(s) curve use log_bins=True , otherwise(e.g. normalize distance for Hi-C matrix ) use log_bins=False
 def psDataFromMat(matrix, indices=None, log_bins=True, base=1.1):
     """
@@ -111,15 +124,16 @@ def addVec(a, b):
     return c
 
 # call A/B compartmnet 
-def ABcompartment_from_mat(mat, chrom, cgpath, PARAMETERS, n_components=1):
-    mat = sqrt_norm(mat)
-    mat = oe(mat, None)
+def ABcompartments(mat, chrom, cgpath, PARAMETERS, n_components=1):
+    mat = getOEMatrix(mat)
+    
     np.fill_diagonal(mat, 1)
+
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", category=PearsonRConstantInputWarning
         )
-        mat = pearson(mat)
+        mat = getPearsonCorrMatrix(mat)
     
     np.fill_diagonal(mat, 1)
     mat[np.isnan(mat)] = 0.0
@@ -136,7 +150,7 @@ def ABcompartment_from_mat(mat, chrom, cgpath, PARAMETERS, n_components=1):
     pca_df = pca_df[["chrom", "start", "end"] + ["PC{}".format(i) for i in range(1, n_components+1)]]
     
     # correct the sign of PC1
-    CG = pd.read_csv(cgpath,sep="\t",header = None)
+    CG = pd.read_csv(cgpath, sep="\t", header = None)
     
     CG.columns = ["chrom","start", "GC"]
     CG = pca_df[['chrom','start']].merge(CG,how='left',on=['chrom','start'])
@@ -146,84 +160,39 @@ def ABcompartment_from_mat(mat, chrom, cgpath, PARAMETERS, n_components=1):
         pca_df["PC1"] = -pca_df["PC1"]
         y = -y
     
-    max_score = np.max(y)
-    y = np.divide(y, max_score)
+    y = np.where(y > 0, 1, 0)
     
     return y
 
-
-
-
-######################### Higashi Implementation ###################################################3
-
-try:
-	from scipy.stats import PearsonRConstantInputWarning, SpearmanRConstantInputWarning
-except:
-	from scipy.stats import ConstantInputWarning as PearsonRConstantInputWarning
-import warnings
 from scipy.fftpack import rfft, irfft
 
-
-def sqrt_norm(matrix):
-	coverage = (np.sqrt(np.sum(matrix, axis=-1)))
-	with np.errstate(divide='ignore', invalid='ignore'):
-		matrix = matrix / coverage.reshape((-1, 1))
-		matrix = matrix / coverage.reshape((1, -1))
-	matrix[np.isnan(matrix)] = 0.0
-	matrix[np.isinf(matrix)] = 0.0
-	return matrix
+def smooth_data_fft(arr, span):  # the scaling of "span" is open to suggestions
+    w = rfft(arr)
+    spectrum = w ** 2
+    cutoff_idx = spectrum < (spectrum.max() * (1 - np.exp(-span / 2000)))
+    w[cutoff_idx] = 0
+    return irfft(w)
 
 
-def kth_diag_indices(a, k):
-	rows, cols = np.diag_indices_from(a)
-	if k < 0:
-		return rows[-k:], cols[:k]
-	elif k > 0:
-		return rows[:-k], cols[k:]
-	else:
-		return rows, cols
+def insulationScore(m, windowsize=500000, res=40000):
+    """
+    input: contact matrix,windowsize for sliding window, resolution of your contact matrix.
+    ourput:
 
+    """
+    windowsize_bin = int(windowsize / res)
+    score = np.ones((len(m)))
+    for i in range(windowsize_bin, len(m) - windowsize_bin):
+        with np.errstate(divide='ignore', invalid='ignore'):
+            v = np.sum(m[max(0, i - windowsize_bin): i, i + 1: min(len(m) - 1, i + windowsize_bin + 1)]) / (np.sum(
+                m[max(0, i - windowsize_bin):min(len(m) - 1, i + windowsize_bin + 1),
+                    max(0, i - windowsize_bin):min(len(m) - 1, i + windowsize_bin + 1)]))
+            if np.isnan(v):
+                v = 0
 
-
-def oe(matrix, expected = None):
-	new_matrix = np.zeros_like(matrix)
-	for k in range(len(matrix)):
-		rows, cols = kth_diag_indices(matrix, k)
-		diag = np.diag(matrix,k)
-		if expected is not None:
-			expect = expected[k]
-		else:
-			expect = np.sum(diag) / (np.sum(diag != 0.0) + 1e-15)
-		if expect == 0:
-			new_matrix[rows, cols] = 0.0
-		else:
-			new_matrix[rows, cols] = diag / (expect)
-	new_matrix = new_matrix + new_matrix.T
-	return new_matrix
-
-def pearson(matrix):
-	return np.corrcoef(matrix)
-
-def compartment(matrix, expected=None):
-    contact = matrix
+        score[i] = v
     
-    contact = sqrt_norm(matrix)
-    contact = oe(contact, expected)
-    np.fill_diagonal(contact, 1)
+    score[score >= 0.99] = 0
+    # score = smooth_data_fft(score, 4)
     
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", category=PearsonRConstantInputWarning
-        )
-        contact = pearson(contact)
-    
-    np.fill_diagonal(contact, 1)
-    contact[np.isnan(contact)] = 0.0
-	
-    pca = PCA(n_components=1)
-    y = pca.fit_transform(contact)
-    
-    max_score = np.max(y)
-    y = np.divide(y, max_score)
-    
-    return y
+    return score
