@@ -22,7 +22,7 @@ pip install -r requirements.txt
 ## Downloading the supplementary datasets and model weights
 We have uploaded our model weights and supplementary datasets, such as the CTCF and CpG scores, Gene annotation files, and chrom sizes in this [data](https://drive.google.com/drive/folders/1Bo7sq2TlgVZRU6c6JB4MFAT2LZSz0SEm?usp=sharing) folder. Please download this folder before you proceed with the rest of the installation. While we train and test scGrapHiC on mouse datasets only, we provide these supplementary files for Human (hg38) and Fly (dm6) to aid users who work with these model organisms. We also provide training, testing, and held-out cell-type dataloaders in the processed directory to make it easy to replicate the results in our manuscript. 
 
-We have not uploaded Human and Fly stem cell bulks Hi-C files in this data repository because Hi-C files typically are in order of 10s of GBs. Refer to section XXX later in the README, where we provide links to both Human and Fly bulk Hi-C files. In the same section, we refer interested readers to repositories containing a wide selection of tissue-specific bulk Hi-C measurements. 
+We have not uploaded Human and Fly stem cell bulks Hi-C files in this data repository because Hi-C files typically are in order of 10s of GBs. Refer to [section](https://github.com/rsinghlab/scGrapHiC?tab=readme-ov-file#bulk-hi-c-for-humans-and-flies) later in the README, where we provide links to both Human and Fly bulk Hi-C files. In the same section, we refer interested readers to repositories containing a wide selection of tissue-specific bulk Hi-C measurements. 
 
 ## Setting up Paths
 Before we run the pipeline, we need to define four static paths in the src/globals.py file: 
